@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 520" role="img" aria-labelledby="title desc">
+  <title id="title">Velvet Moisture Mask</title>
+  <desc id="desc">Minimal botanical hair mask jar product image.</desc>
+  <rect width="720" height="520" fill="#f7efe7"/>
+  <circle cx="196" cy="144" r="124" fill="#e1ead8"/>
+  <circle cx="544" cy="392" r="112" fill="#ead3c9"/>
+  <ellipse cx="360" cy="180" rx="182" ry="60" fill="#fffdf8" stroke="#111" stroke-width="7"/>
+  <path d="M180 180h360l-34 202c-8 48-49 84-98 84h-96c-49 0-90-36-98-84z" fill="#fffdf8" stroke="#111" stroke-width="7"/>
+  <ellipse cx="360" cy="180" rx="128" ry="34" fill="#111"/>
+  <text x="360" y="314" text-anchor="middle" fill="#111" font-family="Georgia, serif" font-size="34">Velvet</text>
+  <text x="360" y="354" text-anchor="middle" fill="#111" font-family="Arial, sans-serif" font-size="20" letter-spacing="4">MASK</text>
+</svg>

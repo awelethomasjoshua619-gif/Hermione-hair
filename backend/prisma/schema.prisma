@@ -1,0 +1,121 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  customer
+  admin
+}
+
+enum OrderStatus {
+  pending
+  paid
+  shipped
+  delivered
+  cancelled
+}
+
+enum DiscountType {
+  percentage
+  fixed
+}
+
+model User {
+  id                 String          @id @default(uuid())
+  name               String
+  email              String          @unique
+  passwordHash       String
+  role               Role            @default(customer)
+  isVerified         Boolean         @default(false)
+  verificationToken  String?
+  twoFactorSecret    String?
+  twoFactorEnabled   Boolean         @default(false)
+  createdAt          DateTime        @default(now())
+  lastSeenAt         DateTime        @default(now())
+  orders             Order[]
+  siteVisits         SiteVisit[]
+}
+
+model Product {
+  id                   String      @id @default(uuid())
+  name                 String
+  slug                 String      @unique
+  description          String
+  functionTag          String
+  price                Int         // in NGN (storefront uses base NGN like 6500)
+  compareAtPrice       Int?
+  stockQuantity        Int
+  images               String[]    // array of image URLs/filenames
+  isExcludedFromPromos Boolean     @default(false)
+  tags                 String[]
+  createdAt            DateTime    @default(now())
+  orderItems           OrderItem[]
+}
+
+model Order {
+  id                 String      @id @default(uuid())
+  userId             String
+  user               User        @relation(fields: [userId], references: [id])
+  status             OrderStatus @default(pending)
+  totalAmount        Int         // in NGN
+  paystackReference  String      @unique
+  trackingNumber     String?
+  shippingAddress    Json        // contains street, city, state, phone
+  createdAt          DateTime    @default(now())
+  orderItems         OrderItem[]
+}
+
+model OrderItem {
+  id              String   @id @default(uuid())
+  orderId         String
+  order           Order    @relation(fields: [orderId], references: [id])
+  productId       String
+  product         Product  @relation(fields: [productId], references: [id])
+  quantity        Int
+  priceAtPurchase Int      // price in NGN
+}
+
+model Discount {
+  id                  String       @id @default(uuid())
+  code                String?      @unique
+  type                DiscountType
+  value               Int          // percentage or fixed amount
+  appliesToProductIds String[]     // specific products it applies to
+  global              Boolean      @default(false)
+  startDate           DateTime
+  endDate             DateTime
+  active              Boolean      @default(true)
+}
+
+model SiteVisit {
+  id        String   @id @default(uuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  path      String
+  ipHash    String
+  timestamp DateTime @default(now())
+}
+
+model AdminAuditLog {
+  id           String   @id @default(uuid())
+  adminUserId  String
+  action       String   // e.g. "updated_product", "created_discount", "changed_order_status"
+  targetId     String
+  details      Json
+  timestamp    DateTime @default(now())
+}
+
+model AdminLoginLog {
+  id              String   @id @default(uuid())
+  adminUserId     String?
+  emailAttempted  String
+  ip              String
+  userAgent       String
+  success         Boolean
+  timestamp       DateTime @default(now())
+}

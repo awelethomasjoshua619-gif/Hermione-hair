@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 520" role="img" aria-labelledby="title desc">
+  <title id="title">Royal Crown Shampoo</title>
+  <desc id="desc">Minimal botanical shampoo bottle product image.</desc>
+  <rect width="720" height="520" fill="#f5f1e9"/>
+  <circle cx="530" cy="120" r="120" fill="#d7eadf"/>
+  <circle cx="188" cy="418" r="118" fill="#ead7cf"/>
+  <rect x="280" y="82" width="160" height="34" rx="12" fill="#111"/>
+  <rect x="300" y="116" width="120" height="44" rx="18" fill="#343434"/>
+  <rect x="230" y="148" width="260" height="310" rx="42" fill="#fffdf8" stroke="#111" stroke-width="7"/>
+  <rect x="260" y="220" width="200" height="126" rx="24" fill="#111"/>
+  <text x="360" y="268" text-anchor="middle" fill="#fffdf8" font-family="Georgia, serif" font-size="30">Royal</text>
+  <text x="360" y="306" text-anchor="middle" fill="#fffdf8" font-family="Arial, sans-serif" font-size="20" letter-spacing="4">SHAMPOO</text>
+  <path d="M333 384c20-38 44-38 64 0" fill="none" stroke="#111" stroke-width="7" stroke-linecap="round"/>
+  <path d="M320 394h90" stroke="#111" stroke-width="7" stroke-linecap="round"/>
+</svg>

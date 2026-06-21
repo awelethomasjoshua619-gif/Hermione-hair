@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 520" role="img" aria-labelledby="title desc">
+  <title id="title">Scalp Revival Tonic</title>
+  <desc id="desc">Minimal botanical scalp tonic spray product image.</desc>
+  <rect width="720" height="520" fill="#edf1f4"/>
+  <circle cx="510" cy="136" r="114" fill="#ded8ea"/>
+  <circle cx="180" cy="390" r="120" fill="#d7e7df"/>
+  <path d="M316 80h88v62h-88z" fill="#111"/>
+  <path d="M292 116h136v54H292z" fill="#fffdf8" stroke="#111" stroke-width="7"/>
+  <rect x="240" y="160" width="240" height="306" rx="50" fill="#fffdf8" stroke="#111" stroke-width="7"/>
+  <path d="M304 262c18-35 51-53 98-54-8 48-29 80-62 97-19 9-40 10-62 3 3-16 11-32 26-46z" fill="#111"/>
+  <text x="360" y="372" text-anchor="middle" fill="#111" font-family="Georgia, serif" font-size="31">Scalp Tonic</text>
+</svg>

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 520" role="img" aria-labelledby="title desc">
+  <title id="title">Goddess Growth Serum</title>
+  <desc id="desc">Minimal botanical serum dropper product image.</desc>
+  <rect width="720" height="520" fill="#eef4ef"/>
+  <circle cx="178" cy="132" r="112" fill="#f4ded4"/>
+  <circle cx="550" cy="382" r="132" fill="#dbe8cf"/>
+  <rect x="304" y="74" width="112" height="42" rx="16" fill="#111"/>
+  <path d="M336 116h48v68h-48z" fill="#f8f6ef" stroke="#111" stroke-width="7"/>
+  <rect x="252" y="166" width="216" height="294" rx="94" fill="#fffaf2" stroke="#111" stroke-width="7"/>
+  <path d="M360 218c42 54 62 91 62 124 0 38-26 66-62 66s-62-28-62-66c0-33 20-70 62-124z" fill="#111"/>
+  <text x="360" y="330" text-anchor="middle" fill="#fffaf2" font-family="Georgia, serif" font-size="28">Serum</text>
+  <path d="M287 430h146" stroke="#111" stroke-width="7" stroke-linecap="round"/>
+</svg>
