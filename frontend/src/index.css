@@ -1,5 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500&family=Inter:wght@300;400;500;600;700&display=swap');
 
+
 /* ===== RESET & BASE ===== */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -190,10 +191,10 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 500; line-height
   font-size: 1.5rem;
   font-weight: 600;
   letter-spacing: -0.01em;
-  color: #ffffff;
+  color: #000000;
   white-space: nowrap;
 }
-.logo span { color: #ffffff; font-weight: 600; }
+.logo span { color: #000000; font-weight: 600; }
 
 .nav-links {
   display: flex;
@@ -507,22 +508,25 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 500; line-height
 .product-image-box {
   position: relative;
   aspect-ratio: 1.18;
-  background: var(--bg-4);
+  background: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
 }
 
+
 .product-image-box img {
   width: 100%;
   height: 100%;
   object-fit: contain;
   object-position: center;
-  padding: 18px;
+  padding: 14px;
   transition: var(--transition);
 }
 .product-card:hover .product-image-box img { transform: scale(1.03); }
+
+
 
 .product-overlay {
   position: absolute;
@@ -645,8 +649,10 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 500; line-height
 .shop-product-card .product-image-box img {
   object-fit: contain;
   object-position: center;
-  padding: 18px;
+  padding: 14px;
 }
+
+
 
 /* ===== THE HERMIONE METHOD ===== */
 .method {
@@ -854,11 +860,18 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 500; line-height
 
 /* ===== FOOTER ===== */
 .footer {
-  background: var(--bg-2);
-  border-top: 1px solid var(--border);
+  background: #F8F1E8;
+  border-top: 1px solid rgba(0,0,0,0.08);
 }
 
+
+
+
+
+
+
 .footer-inner {
+  background: #F8F1E8;
   max-width: 1280px;
   margin: 0 auto;
   padding: 80px 40px 60px;
@@ -869,11 +882,13 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 500; line-height
 
 .footer-brand p {
   font-size: 0.9rem;
-  color: var(--fg-3);
+  color: rgba(0,0,0,0.72);
+
   line-height: 1.7;
   margin: 16px 0 28px;
   max-width: 380px;
 }
+
 
 .social-links { display: flex; gap: 12px; }
 .social-link {
@@ -904,18 +919,22 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 500; line-height
   font-weight: 700;
   letter-spacing: 0.15em;
   text-transform: uppercase;
-  color: var(--fg);
+  color: #000000;
   margin-bottom: 20px;
 }
+
 .footer-col ul { display: flex; flex-direction: column; gap: 10px; }
 .footer-col a {
   font-size: 0.875rem;
-  color: var(--fg-3);
+  color: #000000;
   transition: color var(--transition);
 }
-.footer-col a:hover { color: var(--fg); }
+
+.footer-col a:hover { color: #2E4A3F; }
+
 
 .footer-bottom {
+  background: #F8F1E8;
   max-width: 1280px;
   margin: 0 auto;
   padding: 28px 40px;

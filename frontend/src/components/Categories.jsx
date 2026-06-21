@@ -190,13 +190,6 @@ export default function Categories({ addToCart }) {
         <h2 className="section-title">The Complete Botanical System</h2>
       </div>
 
-      <div className="category-filters reveal">
-        <button className="btn-filter active">All Products</button>
-        <button className="btn-filter">Cleanse</button>
-        <button className="btn-filter">Condition</button>
-        <button className="btn-filter">Style</button>
-      </div>
-
       <div className="products-grid reveal">
         {productList.map((p) => (
           <article className="product-card" key={p.id} id={p.id}>
