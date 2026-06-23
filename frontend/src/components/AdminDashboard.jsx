@@ -1,5 +1,22 @@
 import { useState, useEffect } from 'react'
 
+const productImage = (fileName) => `${import.meta.env.BASE_URL}products/${fileName}`
+const fallbackProductImage = productImage('hair-butter.png')
+const productImageAliases = {
+  'hair-growth-cream.png': 'herbal-growth-cream.png',
+}
+
+const normalizeProductImageName = (image) => productImageAliases[image] || image
+
+
+const resolveProductImage = (image) => {
+  if (!image) return fallbackProductImage
+  const normalizedImage = normalizeProductImageName(image)
+  if (/^https?:\/\//i.test(normalizedImage) || normalizedImage.startsWith('/')) return normalizedImage
+  return productImage(normalizedImage)
+}
+
+
 export default function AdminDashboard({ apiBaseUrl, onLogout }) {
   const [activeTab, setActiveTab] = useState('overview') // 'overview' | 'products' | 'orders' | 'users' | 'discounts' | 'logs'
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -570,7 +587,17 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
 
                   <div className="form-group">
                     <label>Image Filenames (Comma-separated)</label>
-                    <input type="text" placeholder="hair-butter.png, edge-growth.png" required value={productForm.images} onChange={(e) => setProductForm({ ...productForm, images: e.target.value })} />
+                    <input type="text" placeholder="hair-butter.png, edge-growth-cream.png" required value={productForm.images} onChange={(e) => setProductForm({ ...productForm, images: e.target.value })} />
+                    {productForm.images && (
+                      <div className="admin-image-preview">
+                        <img
+                          src={resolveProductImage(productForm.images.split(',')[0].trim())}
+                          alt="Product preview"
+                          onError={(e) => { e.currentTarget.src = fallbackProductImage }}
+                        />
+                        <span>{productForm.images.split(',')[0].trim()}</span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="form-group">
@@ -608,8 +635,20 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
                   {products.map((prod) => (
                     <tr key={prod.id}>
                       <td>
-                        <strong>{prod.name}</strong>
-                        <span className="table-sub">{prod.slug}</span>
+                        <div className="admin-product-cell">
+                          <img
+                            className="admin-product-thumb"
+                            src={resolveProductImage(prod.images?.[0])}
+                            alt={prod.name}
+                            onError={(e) => { e.currentTarget.src = fallbackProductImage }}
+                          />
+                          <div>
+                            <strong>{prod.name}</strong>
+                            <span className="table-sub">{prod.slug}</span>
+                            <span className="table-desc">{prod.description}</span>
+                            <span className="table-sub">{prod.images?.map(normalizeProductImageName).join(', ')}</span>
+                          </div>
+                        </div>
                       </td>
                       <td>{prod.functionTag}</td>
                       <td>{formatPrice(prod.price)}</td>
@@ -625,7 +664,7 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
                             price: prod.price,
                             compareAtPrice: prod.compareAtPrice || '',
                             stockQuantity: prod.stockQuantity,
-                            images: prod.images.join(','),
+                            images: prod.images.map(normalizeProductImageName).join(','),
                             tags: prod.tags.join(','),
                             isExcludedFromPromos: prod.isExcludedFromPromos,
                           })
@@ -911,3 +950,6 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
     </div>
   )
 }
+
+
+

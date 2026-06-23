@@ -75,7 +75,7 @@ async function main() {
       functionTag: 'Nourish',
       price: 6000,
       stockQuantity: 50,
-      images: ['hair-growth-cream.png'],
+      images: ['herbal-growth-cream.png'],
       tags: ['cream', 'growth', 'moisture'],
     },
     {

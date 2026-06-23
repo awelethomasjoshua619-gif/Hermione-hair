@@ -10,10 +10,21 @@ const CartIcon = () => (
 
 const productImage = (fileName) => `${import.meta.env.BASE_URL}products/${fileName}`
 const fallbackProductImage = productImage('hair-butter.png')
+const productImageAliases = {
+  'hair-growth-cream.png': 'herbal-growth-cream.png',
+}
+
 
 const handleImageError = (event) => {
   if (event.currentTarget.src.endsWith('/hair-butter.png')) return
   event.currentTarget.src = fallbackProductImage
+}
+
+const resolveProductImage = (image) => {
+  if (!image) return fallbackProductImage
+  const normalizedImage = productImageAliases[image] || image
+  if (/^https?:\/\//i.test(normalizedImage) || normalizedImage.startsWith('/')) return normalizedImage
+  return productImage(normalizedImage)
 }
 
 const products = [
@@ -65,7 +76,7 @@ const products = [
     rating: '*****',
     reviews: 201,
     badge: null,
-    image: productImage('hair-growth-cream.png'),
+    image: productImage('herbal-growth-cream.png'),
   },
   {
     id: 'shop-deep-conditioner',
@@ -154,7 +165,13 @@ export default function Categories({ addToCart }) {
               (dbP) => dbP.slug === cleanCartId || dbP.slug.includes(cleanCartId) || cleanCartId.includes(dbP.slug)
             )
             if (match) {
-              return { ...p, price: match.price, name: match.name, desc: match.description || p.desc }
+              return {
+                ...p,
+                price: match.price,
+                name: match.name,
+                desc: match.description || p.desc,
+                image: resolveProductImage(match.images?.[0]) || p.image,
+              }
             }
             return p
           }))
@@ -224,3 +241,4 @@ export default function Categories({ addToCart }) {
     </section>
   )
 }
+
