@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react'
 
-const productImage = (fileName) => `${import.meta.env.BASE_URL}products/${fileName}`
+const productImage = (fileName) => {
+  const basePath = import.meta.env.BASE_URL === '/' ? '' : import.meta.env.BASE_URL
+  return `${basePath}/products/${fileName}`
+}
 const fallbackProductImage = productImage('hair-butter.png')
 const productImageAliases = {
   'hair-growth-cream.png': 'herbal-growth-cream.png',
@@ -641,7 +644,7 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
                         <div className="admin-product-cell">
                           <img
                             className="admin-product-thumb"
-                            src={resolveProductImage(prod.images?.[0])}
+                            src={prod.images && prod.images.length > 0 ? resolveProductImage(prod.images[0]) : fallbackProductImage}
                             alt={prod.name}
                             onError={(e) => { e.currentTarget.src = fallbackProductImage }}
                           />
@@ -649,7 +652,9 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
                             <strong>{prod.name}</strong>
                             <span className="table-sub">{prod.slug}</span>
                             <span className="table-desc">{prod.description}</span>
-                            <span className="table-sub">{prod.images?.map(normalizeProductImageName).join(', ')}</span>
+                            <span className="table-sub" style={{ display: 'block', marginTop: '3px', fontSize: '0.7rem' }}>
+                              {prod.images && prod.images.length > 0 ? `📷 ${prod.images.map(normalizeProductImageName).join(', ')}` : '❌ No images'}
+                            </span>
                           </div>
                         </div>
                       </td>
