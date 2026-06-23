@@ -2196,7 +2196,7 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 500; line-height
 }
 .admin-table {
   width: 100%;
-  min-width: 800px;
+  min-width: 1200px;
   border-collapse: collapse;
   text-align: left;
 }
@@ -2565,7 +2565,7 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 500; line-height
   grid-template-columns: 56px minmax(0, 1fr);
   align-items: center;
   gap: 12px;
-  min-width: 280px;
+  min-width: 400px;
 }
 
 .admin-product-thumb,
@@ -2584,7 +2584,7 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 500; line-height
   color: #6d6258;
   font-size: 0.78rem;
   line-height: 1.35;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
