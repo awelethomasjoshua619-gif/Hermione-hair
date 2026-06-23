@@ -3,14 +3,16 @@ import prisma from '../config/db'
 import { AuthenticatedRequest, logAdminAction } from '../middlewares/auth'
 
 export const getProducts = async (req: Request, res: Response): Promise<void> => {
-  const { functionTag, search, tag } = req.query as {
+  const { functionTag, search, tag, limit } = req.query as {
     functionTag?: string
     search?: string
     tag?: string
+    limit?: string
   }
 
   try {
     const where: any = {}
+    const take = limit ? Math.min(parseInt(limit), 500) : undefined
 
     if (functionTag) {
       where.functionTag = { equals: functionTag, mode: 'insensitive' }
@@ -30,6 +32,7 @@ export const getProducts = async (req: Request, res: Response): Promise<void> =>
     const products = await prisma.product.findMany({
       where,
       orderBy: { createdAt: 'desc' },
+      ...(take && { take }),
     })
 
     res.json({ status: 'success', data: products })
