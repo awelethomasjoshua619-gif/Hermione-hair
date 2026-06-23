@@ -193,7 +193,7 @@ import jwt from 'jsonwebtoken'
 app.post('/api/botanical-portal/login', adminAuthLimiter, validate(loginSchema), login)
 
 // Middleware groups for Admin validation
-const adminAuthMiddleware = [] // Authentication disabled for development
+const adminAuthMiddleware: any[] = [] // Authentication disabled for development
 
 // Analytics
 app.get('/api/admin/analytics/overview', adminAuthMiddleware, getAdminHomeOverview)
