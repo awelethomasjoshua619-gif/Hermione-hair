@@ -97,7 +97,7 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
         const tData = await tRes.json()
         if (tData.status === 'success') setTopSellers(tData.data)
       } else if (activeTab === 'products') {
-        const res = await fetch(`${apiBaseUrl}/api/products`)
+        const res = await fetch(`${apiBaseUrl}/api/products?limit=200`)
         const data = await res.json()
         if (data.status === 'success') setProducts(data.data)
         else setError(data.message || 'Failed to load products')
