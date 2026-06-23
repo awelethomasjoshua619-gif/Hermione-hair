@@ -186,8 +186,8 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
       price: parseInt(productForm.price, 10),
       compareAtPrice: productForm.compareAtPrice ? parseInt(productForm.compareAtPrice, 10) : null,
       stockQuantity: parseInt(productForm.stockQuantity, 10),
-      images: productForm.images.split(',').map((img) => img.trim()),
-      tags: productForm.tags.split(',').map((tag) => tag.trim()),
+      images: productForm.images.split(',').map((img) => img.trim()).filter(Boolean),
+      tags: productForm.tags.split(',').map((tag) => tag.trim()).filter(Boolean),
     }
 
     try {
@@ -587,7 +587,7 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
 
                   <div className="form-group">
                     <label>Image Filenames (Comma-separated)</label>
-                    <input type="text" placeholder="hair-butter.png, edge-growth-cream.png" required value={productForm.images} onChange={(e) => setProductForm({ ...productForm, images: e.target.value })} />
+                    <input type="text" placeholder="hair-butter.png, edge-growth-cream.png" value={productForm.images} onChange={(e) => setProductForm({ ...productForm, images: e.target.value })} />
                     {productForm.images && (
                       <div className="admin-image-preview">
                         <img
@@ -598,6 +598,9 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
                         <span>{productForm.images.split(',')[0].trim()}</span>
                       </div>
                     )}
+                    <small style={{ color: '#999', marginTop: '8px', display: 'block' }}>
+                      Upload images to frontend/public/products/ folder to make them available
+                    </small>
                   </div>
 
                   <div className="form-group">
