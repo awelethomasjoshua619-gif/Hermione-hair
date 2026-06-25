@@ -231,6 +231,29 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
     }
   }
 
+  const handleDeleteUser = async (id) => {
+    if (!confirm('Are you sure you want to permanently delete this customer account? All their site visits and order history will also be deleted.')) return
+    setError('')
+    setSuccess('')
+    const headers = getHeaders()
+
+    try {
+      const res = await fetch(`${apiBaseUrl}/api/admin/users/${id}`, {
+        method: 'DELETE',
+        headers,
+      })
+      const data = await res.json()
+      if (data.status === 'success') {
+        setSuccess('Customer account deleted successfully')
+        fetchTabData()
+      } else {
+        setError(data.message)
+      }
+    } catch (err) {
+      setError('Failed to delete customer')
+    }
+  }
+
   const handleTogglePromo = async (id) => {
     setError('')
     const token = localStorage.getItem('adminAccessToken')
@@ -750,212 +773,6 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
               <div className="admin-form-modal">
                 <form onSubmit={handleTrackingSubmit} className="admin-form-card">
                   <h2>Configure Tracking details</h2>
-                  <p>Assigning a tracking code will mark the order as <strong>shipped</strong> and notify the customer by email.</p>
-                  
-                  <div className="form-group">
-                    <label>Logistics Provider Name</label>
-                    <input type="text" required placeholder="e.g. DHL Nigeria, GIG Logistics" value={trackingForm.logisticsCompany} onChange={(e) => setTrackingForm({ ...trackingForm, logisticsCompany: e.target.value })} />
-                  </div>
-
-                  <div className="form-group">
-                    <label>Tracking Number</label>
-                    <input type="text" required placeholder="e.g. GIG-123456789" value={trackingForm.trackingNumber} onChange={(e) => setTrackingForm({ ...trackingForm, trackingNumber: e.target.value })} />
-                  </div>
-
-                  <div className="form-actions">
-                    <button type="button" onClick={() => setTrackingOrder(null)} className="btn-outline">Cancel</button>
-                    <button type="submit" className="btn-primary" style={{ background: '#2E4A3F' }}>Ship Package &amp; Notify</button>
-                  </div>
-                </form>
-              </div>
-            )}
-
-            {/* Orders Table */}
-            <div className="admin-table-wrapper">
-              <table className="admin-table">
-                <thead>
-                  <tr>
-                    <th>Reference</th>
-                    <th>Customer</th>
-                    <th>Total</th>
-                    <th>Status</th>
-                    <th>Tracking</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {orders.map((ord) => (
-                    <tr key={ord.id}>
-                      <td className="monospace">{ord.paystackReference}</td>
-                      <td>
-                        <strong>{ord.user.name}</strong>
-                        <span className="table-sub">{ord.user.email}</span>
-                      </td>
-                      <td>{formatPrice(ord.totalAmount)}</td>
-                      <td>
-                        <select value={ord.status} onChange={(e) => handleOrderStatusUpdate(ord.id, e.target.value)} className="select-table-status">
-                          <option value="pending">Pending</option>
-                          <option value="paid">Paid</option>
-                          <option value="shipped">Shipped</option>
-                          <option value="delivered">Delivered</option>
-                          <option value="cancelled">Cancelled</option>
-                        </select>
-                      </td>
-                      <td>
-                        {ord.trackingNumber ? (
-                          <code className="table-tracking-code">{ord.trackingNumber}</code>
-                        ) : (
-                          <span className="text-muted">Unassigned</span>
-                        )}
-                      </td>
-                      <td>
-                        <button onClick={() => {
-                          setTrackingOrder(ord)
-                          setTrackingForm({ trackingNumber: ord.trackingNumber || '', logisticsCompany: '' })
-                        }} className="btn-table-action text-edit">Ship / Track</button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* Tab 4: Customer Directory */}
-        {activeTab === 'users' && (
-          <div className="tab-view users-view">
-            <div className="view-header">
-              <h1>Registered Customers</h1>
-              <div className="header-actions">
-                <button onClick={fetchTabData} className="btn-outline">↻ Refresh</button>
-                <button onClick={handleUsersCSVExport} className="btn-outline">Export CSV</button>
-              </div>
-            </div>
-
-            {/* Users Table */}
-            <div className="admin-table-wrapper">
-              <table className="admin-table">
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Status</th>
-                    <th>Joined</th>
-                    <th>Total Orders</th>
-                    <th>LTV (Spend)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {users.map((usr) => (
-                    <tr key={usr.id}>
-                      <td><strong>{usr.name}</strong></td>
-                      <td>{usr.email}</td>
-                      <td>
-                        <span className={`user-status-tag ${usr.status}`}>
-                          {usr.status.toUpperCase()}
-                        </span>
-                      </td>
-                      <td>{new Date(usr.createdAt).toLocaleDateString()}</td>
-                      <td>{usr.totalOrders} orders</td>
-                      <td>{formatPrice(usr.lifetimeSpend)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* Tab 5: Discount Coupons */}
-        {activeTab === 'discounts' && (
-          <div className="tab-view discounts-view">
-            <div className="view-header">
-              <h1>Promo Codes &amp; Coupons</h1>
-              <button onClick={() => { setEditingDiscount(null); setShowDiscountForm(true) }} className="btn-primary" style={{ background: '#2E4A3F' }}>Create Discount Coupon</button>
-            </div>
-
-            {/* Discount Form Dialog */}
-            {showDiscountForm && (
-              <div className="admin-form-modal">
-                <form onSubmit={handleDiscountSubmit} className="admin-form-card">
-                  <h2>{editingDiscount ? 'Update Discount Coupon' : 'Create Discount Code'}</h2>
-                  
-                  <div className="form-group">
-                    <label>Discount Code (e.g. GROW10)</label>
-                    <input type="text" required placeholder="GROW10" value={discountForm.code} onChange={(e) => setDiscountForm({ ...discountForm, code: e.target.value })} />
-                  </div>
-
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label>Deduction Type</label>
-                      <select value={discountForm.type} onChange={(e) => setDiscountForm({ ...discountForm, type: e.target.value })} className="select-form-type">
-                        <option value="percentage">Percentage (%)</option>
-                        <option value="fixed">Fixed Amount (NGN)</option>
-                      </select>
-                    </div>
-                    <div className="form-group">
-                      <label>Discount Value</label>
-                      <input type="number" required placeholder="e.g. 10" value={discountForm.value} onChange={(e) => setDiscountForm({ ...discountForm, value: e.target.value })} />
-                    </div>
-                  </div>
-
-                  <div className="form-group checkbox-group">
-                    <input type="checkbox" id="discount-global" checked={discountForm.global} onChange={(e) => setDiscountForm({ ...discountForm, global: e.target.checked })} />
-                    <label htmlFor="discount-global">Applies to all products (except excluded items)</label>
-                  </div>
-
-                  {!discountForm.global && (
-                    <div className="form-group">
-                      <label>Applicable Product IDs (Comma-separated UUIDs)</label>
-                      <input type="text" placeholder="product-uuid-1, product-uuid-2" value={discountForm.appliesToProductIds} onChange={(e) => setDiscountForm({ ...discountForm, appliesToProductIds: e.target.value })} />
-                    </div>
-                  )}
-
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label>Start Date</label>
-                      <input type="datetime-local" required value={discountForm.startDate} onChange={(e) => setDiscountForm({ ...discountForm, startDate: e.target.value })} />
-                    </div>
-                    <div className="form-group">
-                      <label>End Date</label>
-                      <input type="datetime-local" required value={discountForm.endDate} onChange={(e) => setDiscountForm({ ...discountForm, endDate: e.target.value })} />
-                    </div>
-                  </div>
-
-                  <div className="form-actions">
-                    <button type="button" onClick={() => setShowDiscountForm(false)} className="btn-outline">Cancel</button>
-                    <button type="submit" className="btn-primary" style={{ background: '#2E4A3F' }}>Save Discount</button>
-                  </div>
-                </form>
-              </div>
-            )}
-
-            {/* Discounts Table */}
-            <div className="admin-table-wrapper">
-              <table className="admin-table">
-                <thead>
-                  <tr>
-                    <th>Code</th>
-                    <th>Type</th>
-                    <th>Value</th>
-                    <th>Scope</th>
-                    <th>Dates</th>
-                    <th>Active</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {discounts.map((disc) => (
-                    <tr key={disc.id}>
-                      <td className="monospace"><strong>{disc.code || 'Auto-Apply'}</strong></td>
-                      <td>{disc.type}</td>
-                      <td>{disc.type === 'percentage' ? `${disc.value}%` : formatPrice(disc.value)}</td>
-                      <td>{disc.global ? 'Global (Sitewide)' : 'Selected Products'}</td>
-                      <td>
-                        <span className="table-sub">{new Date(disc.startDate).toLocaleDateString()} to {new Date(disc.endDate).toLocaleDateString()}</span>
-                      </td>
-                      <td>
-                        <span className={`discount-status-tag ${disc.active ? 'active' : 'inactive'}`}>
                           {disc.active ? 'Active' : 'Inactive'}
                         </span>
                       </td>

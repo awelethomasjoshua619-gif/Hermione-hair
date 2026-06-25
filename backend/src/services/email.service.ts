@@ -3,8 +3,10 @@ import { env } from '../config/env'
 
 const resend = new Resend(env.RESEND_API_KEY)
 
-// NOTE: The 'from' address uses your verified custom domain.
-const FROM_ADDRESS = 'Hermione Hair <no-reply@hermionehair.com>'
+// NOTE: Using Resend's shared domain. To send to ANY email address,
+// verify your domain at resend.com/domains and change this to:
+// 'Hermione Hair <no-reply@hermionehair.com>'
+const FROM_ADDRESS = 'Hermione Hair <onboarding@resend.dev>'
 
 interface OrderItemInfo {
   name: string

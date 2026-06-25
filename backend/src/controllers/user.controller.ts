@@ -82,3 +82,45 @@ export const adminGetUsers = async (req: AuthenticatedRequest, res: Response): P
     res.status(500).json({ status: 'error', message: 'Internal server error' })
   }
 }
+
+export const adminDeleteUser = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  const { id } = req.params
+
+  try {
+    const user = await prisma.user.findUnique({ where: { id } })
+    if (!user) {
+      res.status(404).json({ status: 'error', message: 'Customer not found' })
+      return
+    }
+
+    if (user.role === 'admin') {
+      res.status(400).json({ status: 'error', message: 'Cannot delete administrator accounts' })
+      return
+    }
+
+    // 1. Delete associated site visits
+    await prisma.siteVisit.deleteMany({ where: { userId: id } })
+
+    // 2. Find user orders
+    const orders = await prisma.order.findMany({
+      where: { userId: id },
+      select: { id: true },
+    })
+    const orderIds = orders.map((o) => o.id)
+
+    if (orderIds.length > 0) {
+      // 3. Delete order items
+      await prisma.orderItem.deleteMany({ where: { orderId: { in: orderIds } } })
+      // 4. Delete orders
+      await prisma.order.deleteMany({ where: { id: { in: orderIds } } })
+    }
+
+    // 5. Delete user
+    await prisma.user.delete({ where: { id } })
+
+    res.json({ status: 'success', message: 'Customer account deleted successfully' })
+  } catch (error) {
+    console.error('adminDeleteUser error:', error)
+    res.status(500).json({ status: 'error', message: 'Internal server error' })
+  }
+}

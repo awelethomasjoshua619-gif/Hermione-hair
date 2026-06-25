@@ -44,7 +44,7 @@ import {
   getAdminHomeOverview,
   getAuditLogs,
 } from './controllers/analytics.controller'
-import { adminGetUsers } from './controllers/user.controller'
+import { adminGetUsers, adminDeleteUser } from './controllers/user.controller'
 import {
   authenticate,
   requireRole,
@@ -220,6 +220,7 @@ app.patch('/api/admin/orders/:id/tracking', adminAuthMiddleware, validate(setTra
 
 // Users & Logs
 app.get('/api/admin/users', adminAuthMiddleware, adminGetUsers)
+app.delete('/api/admin/users/:id', adminAuthMiddleware, adminDeleteUser)
 app.get('/api/admin/audit-log', adminAuthMiddleware, getAuditLogs)
 
 // Global generic error handling
