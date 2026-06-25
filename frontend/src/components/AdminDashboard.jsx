@@ -1,24 +1,5 @@
 import { useState, useEffect } from 'react'
-
-const productImage = (fileName) => {
-  const basePath = import.meta.env.BASE_URL === '/' ? '' : import.meta.env.BASE_URL
-  return `${basePath}/products/${fileName}`
-}
-const fallbackProductImage = productImage('hair-butter.png')
-const productImageAliases = {
-  'hair-growth-cream.png': 'herbal-growth-cream.png',
-}
-
-const normalizeProductImageName = (image) => productImageAliases[image] || image
-
-
-const resolveProductImage = (image) => {
-  if (!image) return fallbackProductImage
-  const normalizedImage = normalizeProductImageName(image)
-  if (/^https?:\/\//i.test(normalizedImage) || normalizedImage.startsWith('/')) return normalizedImage
-  return productImage(normalizedImage)
-}
-
+import { fallbackProductImage, normalizeProductImageName, resolveProductImage } from '../utils/productImages'
 
 export default function AdminDashboard({ apiBaseUrl, onLogout }) {
   const [activeTab, setActiveTab] = useState('overview') // 'overview' | 'products' | 'orders' | 'users' | 'discounts' | 'logs'

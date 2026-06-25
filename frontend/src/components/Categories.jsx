@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { handleProductImageError, productImage, resolveProductImage } from '../utils/productImages'
 
 const CartIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -7,25 +8,6 @@ const CartIcon = () => (
     <path d="M16 10a4 4 0 01-8 0"/>
   </svg>
 )
-
-const productImage = (fileName) => `${import.meta.env.BASE_URL}products/${fileName}`
-const fallbackProductImage = productImage('hair-butter.png')
-const productImageAliases = {
-  'hair-growth-cream.png': 'herbal-growth-cream.png',
-}
-
-
-const handleImageError = (event) => {
-  if (event.currentTarget.src.endsWith('/hair-butter.png')) return
-  event.currentTarget.src = fallbackProductImage
-}
-
-const resolveProductImage = (image) => {
-  if (!image) return fallbackProductImage
-  const normalizedImage = productImageAliases[image] || image
-  if (/^https?:\/\//i.test(normalizedImage) || normalizedImage.startsWith('/')) return normalizedImage
-  return productImage(normalizedImage)
-}
 
 const products = [
   {
@@ -211,7 +193,7 @@ export default function Categories({ addToCart }) {
         {productList.map((p) => (
           <article className="product-card" key={p.id} id={p.id}>
             <div className="product-image-box">
-              <img src={p.image} alt={p.name} onError={handleImageError} />
+              <img src={p.image} alt={p.name} onError={handleProductImageError} />
               <div className="product-overlay">
                 <button className="btn-add-cart" onClick={() => addToCart(p)}>
                   Add to Cart
