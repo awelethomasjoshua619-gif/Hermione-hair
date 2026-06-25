@@ -41,8 +41,30 @@ export default function Categories({ addToCart }) {
         const data = await res.json()
         if (data.status === 'success') {
           const dbProducts = data.data
-          if (dbProducts.length > 0) {
-            setProductList(dbProducts.map(product => ({
+          const matchedDbIds = new Set()
+
+          // Map over storefront products and update them if matched in DB
+          const updatedStorefront = initialProducts.map(p => {
+            const match = dbProducts.find(dbP => dbP.slug === p.slug)
+            if (match) {
+              matchedDbIds.add(match.id)
+              return {
+                ...p,
+                id: match.id,
+                price: match.price,
+                name: match.name,
+                desc: match.description || p.desc,
+                image: resolveProductImage(match.images?.[0]) || p.image,
+                tags: match.tags
+              }
+            }
+            return p
+          })
+
+          // Find extra database products that are not part of storefront list
+          const extraProducts = dbProducts
+            .filter(dbP => !matchedDbIds.has(dbP.id))
+            .map(product => ({
               id: product.id,
               slug: product.slug,
               name: product.name,
@@ -53,8 +75,9 @@ export default function Categories({ addToCart }) {
               badge: product.tags.includes('bestseller') ? 'Bestseller' : product.tags.includes('new') ? 'New' : null,
               image: resolveProductImage(product.images?.[0]),
               tags: product.tags
-            })))
-          }
+            }))
+
+          setProductList([...updatedStorefront, ...extraProducts])
         }
       } catch (err) {
         console.error('Failed to fetch products for categories:', err)
