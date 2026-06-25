@@ -144,18 +144,9 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
 
   const handleSalesCSVExport = () => {
     const headers = ['Date', 'Visitors', 'Unique Visitors', 'Orders Paid', 'Sales Revenue (NGN)', 'Items Sold']
-    
-    // Combine analytics arrays
     const rows = salesAnalytics.chartData.map((day) => {
       const vDay = visitorAnalytics.chartData.find((vd) => vd.date === day.date) || { visits: 0, uniqueVisitors: 0 }
-      return [
-        day.date,
-        vDay.visits,
-        vDay.uniqueVisitors,
-        '--',
-        day.revenue,
-        '--',
-      ]
+      return [day.date, vDay.visits, vDay.uniqueVisitors, '--', day.revenue, '--']
     })
     exportToCSV('sales_analytics.csv', headers, rows)
   }
@@ -178,7 +169,8 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
 
     try {
       let res
-      if (editingProduct) {
+      // Storefront placeholders have a fake id — always create via POST
+      if (editingProduct && !editingProduct.isStorefrontPlaceholder) {
         res = await fetch(`${apiBaseUrl}/api/admin/products/${editingProduct.id}`, {
           method: 'PATCH',
           headers,
@@ -194,7 +186,7 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
 
       const data = await res.json()
       if (data.status === 'success') {
-        setSuccess(editingProduct && !editingProduct.isStorefrontPlaceholder ? 'Product updated successfully' : 'Product saved to admin catalog')
+        setSuccess(editingProduct && !editingProduct.isStorefrontPlaceholder ? 'Product updated successfully' : 'Product synced to admin catalog successfully')
         setShowProductForm(false)
         setEditingProduct(null)
         setProductForm(emptyProductForm)
@@ -251,6 +243,30 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
       }
     } catch (err) {
       setError('Failed to delete customer')
+    }
+  }
+
+  const handleDeleteAllCustomers = async () => {
+    if (!confirm('⚠️ WARNING: This will permanently delete ALL customer accounts (excluding admin). This cannot be undone. Are you sure?')) return
+    if (!confirm('Final confirmation: Delete ALL customers?')) return
+    setError('')
+    setSuccess('')
+    setLoading(true)
+    const headers = getHeaders()
+    try {
+      // Delete all non-admin users one by one using existing endpoint
+      let deleted = 0
+      for (const user of users) {
+        const res = await fetch(`${apiBaseUrl}/api/admin/users/${user.id}`, { method: 'DELETE', headers })
+        const data = await res.json()
+        if (data.status === 'success') deleted++
+      }
+      setSuccess(`Successfully deleted ${deleted} customer account(s)`)
+      fetchTabData()
+    } catch (err) {
+      setError('Failed to delete all customers')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -447,6 +463,7 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
       .filter(Boolean)
       .some((value) => String(value).toLowerCase().includes(query))
   })
+
   return (
     <div className="admin-dashboard-container">
 
@@ -466,7 +483,6 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
         <div className="sidebar-brand">
           <h2>Hermione <span>Hair</span></h2>
           <p>Admin Control Panel</p>
-          {/* Close button inside sidebar on mobile */}
           <button className="sidebar-close-btn" onClick={() => setSidebarOpen(false)} aria-label="Close menu">✕</button>
         </div>
         <nav className="sidebar-nav">
@@ -533,7 +549,6 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
                   <svg viewBox="0 0 500 200" className="svg-chart">
                     {salesAnalytics.chartData.length > 0 && (
                       <>
-                        {/* Render simple bar chart */}
                         {salesAnalytics.chartData.map((d, index) => {
                           const maxRev = Math.max(...salesAnalytics.chartData.map((cd) => cd.revenue), 1)
                           const barHeight = (d.revenue / maxRev) * 150
@@ -633,7 +648,7 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
                 <form onSubmit={handleProductSubmit} className="admin-form-card">
                   <h2>{editingProduct?.isStorefrontPlaceholder ? 'Add Store Product to Admin' : editingProduct ? 'Update Product Details' : 'Create Product Entry'}</h2>
                   {editingProduct?.isStorefrontPlaceholder && (
-                    <p>This product is visible on the store. Saving it adds it to the admin database so future edits update the live store data.</p>
+                     <p>This product is visible on the store. Saving it adds it to the admin database so future edits update the live store data.</p>
                   )}
                   
                   <div className="form-group">
@@ -752,7 +767,8 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
                             <button onClick={() => handleTogglePromo(prod.id)} className="btn-table-action text-toggle">Toggle Promo</button>
                             <button onClick={() => handleDeleteProduct(prod.id)} className="btn-table-action text-delete">Delete</button>
                           </>
-                        )}                      </td>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -772,7 +788,304 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
             {trackingOrder && (
               <div className="admin-form-modal">
                 <form onSubmit={handleTrackingSubmit} className="admin-form-card">
-                  <h2>Configure Tracking details</h2>
+                  <h2>Configure Tracking Details</h2>
+                  <p>Order ID: {trackingOrder.id}</p>
+                  <div className="form-group">
+                    <label>Logistics Company</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. DHL, GIG Logistics"
+                      value={trackingForm.logisticsCompany}
+                      onChange={(e) => setTrackingForm({ ...trackingForm, logisticsCompany: e.target.value })}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Tracking Number</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. 732948231"
+                      value={trackingForm.trackingNumber}
+                      onChange={(e) => setTrackingForm({ ...trackingForm, trackingNumber: e.target.value })}
+                    />
+                  </div>
+                  <div className="form-actions">
+                    <button type="button" onClick={() => setTrackingOrder(null)} className="btn-outline">Cancel</button>
+                    <button type="submit" className="btn-primary" style={{ background: '#2E4A3F' }}>Set Tracking</button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {/* Orders Table */}
+            <div className="admin-table-wrapper">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>Order ID</th>
+                    <th>Customer</th>
+                    <th>Date</th>
+                    <th>Total</th>
+                    <th>Status</th>
+                    <th>Logistics</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {orders.map((order) => (
+                    <tr key={order.id}>
+                      <td className="monospace" style={{ fontSize: '0.8rem' }}>{order.id.slice(0, 8)}...</td>
+                      <td>
+                        <div>
+                          <strong>{order.user?.name || 'Guest'}</strong>
+                          <span className="table-sub" style={{ display: 'block' }}>{order.user?.email}</span>
+                          <span className="table-sub" style={{ display: 'block', fontSize: '0.7rem' }}>
+                            📞 {order.shippingAddress?.phone || 'No phone'}
+                          </span>
+                        </div>
+                      </td>
+                      <td>{new Date(order.createdAt).toLocaleDateString()}</td>
+                      <td>{formatPrice(order.totalAmount)}</td>
+                      <td>
+                        <span className={`order-status-badge ${order.status}`}>
+                          {order.status.toUpperCase()}
+                        </span>
+                      </td>
+                      <td>
+                        {order.trackingNumber ? (
+                          <div>
+                            <strong>{order.logisticsCompany}</strong>
+                            <span className="table-sub" style={{ display: 'block' }}>#{order.trackingNumber}</span>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => {
+                              setTrackingOrder(order)
+                              setTrackingForm({ trackingNumber: '', logisticsCompany: '' })
+                            }}
+                            className="btn-outline"
+                            style={{ padding: '4px 8px', fontSize: '0.75rem' }}
+                          >
+                            Set Tracking
+                          </button>
+                        )}
+                      </td>
+                      <td>
+                        <select
+                          value={order.status}
+                          onChange={(e) => handleOrderStatusUpdate(order.id, e.target.value)}
+                          style={{ padding: '4px', fontSize: '0.8rem' }}
+                        >
+                          <option value="pending">Pending</option>
+                          <option value="paid">Paid</option>
+                          <option value="shipped">Shipped</option>
+                          <option value="delivered">Delivered</option>
+                          <option value="cancelled">Cancelled</option>
+                        </select>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Tab 4: Customer Directory */}
+        {activeTab === 'users' && (
+          <div className="tab-view users-view">
+            <div className="view-header">
+              <h1>Registered Customers</h1>
+              <div className="header-actions">
+                <button onClick={fetchTabData} className="btn-outline">↻ Refresh</button>
+                <button onClick={handleUsersCSVExport} className="btn-outline">Export CSV</button>
+                <button
+                  onClick={handleDeleteAllCustomers}
+                  className="btn-primary"
+                  style={{ background: '#dc2626' }}
+                >
+                  ⚠️ Delete All Customers
+                </button>
+              </div>
+            </div>
+
+            {/* Users Table */}
+            <div className="admin-table-wrapper">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Status</th>
+                    <th>Joined</th>
+                    <th>Total Orders</th>
+                    <th>LTV (Spend)</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map((usr) => (
+                    <tr key={usr.id}>
+                      <td><strong>{usr.name}</strong></td>
+                      <td>{usr.email}</td>
+                      <td>
+                        <span className={`user-status-tag ${usr.status}`}>
+                          {usr.status.toUpperCase()}
+                        </span>
+                      </td>
+                      <td>{new Date(usr.createdAt).toLocaleDateString()}</td>
+                      <td>{usr.totalOrders} orders</td>
+                      <td>{formatPrice(usr.lifetimeSpend)}</td>
+                      <td>
+                        <button
+                          onClick={() => handleDeleteUser(usr.id)}
+                          className="btn-table-action text-delete"
+                          style={{ color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Tab 5: Discount Coupons */}
+        {activeTab === 'discounts' && (
+          <div className="tab-view discounts-view">
+            <div className="view-header">
+              <h1>Promo Codes &amp; Coupons</h1>
+              <button onClick={() => { setEditingDiscount(null); setShowDiscountForm(true) }} className="btn-primary" style={{ background: '#2E4A3F' }}>Create Discount Coupon</button>
+            </div>
+
+            {/* Discount Form Dialog */}
+            {showDiscountForm && (
+              <div className="admin-form-modal">
+                <form onSubmit={handleDiscountSubmit} className="admin-form-card">
+                  <h2>{editingDiscount ? 'Update Discount Coupon' : 'Create Discount Code'}</h2>
+                  
+                  <div className="form-group">
+                    <label>Discount Code (e.g. GROW10)</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. GROW10"
+                      value={discountForm.code}
+                      onChange={(e) => setDiscountForm({ ...discountForm, code: e.target.value.toUpperCase() })}
+                    />
+                  </div>
+
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>Type</label>
+                      <select
+                        value={discountForm.type}
+                        onChange={(e) => setDiscountForm({ ...discountForm, type: e.target.value })}
+                      >
+                        <option value="percentage">Percentage Off (%)</option>
+                        <option value="fixed">Fixed Amount (NGN)</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label>Value</label>
+                      <input
+                        type="number"
+                        required
+                        placeholder="e.g. 10 or 1500"
+                        value={discountForm.value}
+                        onChange={(e) => setDiscountForm({ ...discountForm, value: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>Start Date</label>
+                      <input
+                        type="date"
+                        required
+                        value={discountForm.startDate ? discountForm.startDate.split('T')[0] : ''}
+                        onChange={(e) => setDiscountForm({ ...discountForm, startDate: e.target.value })}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>End Date</label>
+                      <input
+                        type="date"
+                        required
+                        value={discountForm.endDate ? discountForm.endDate.split('T')[0] : ''}
+                        onChange={(e) => setDiscountForm({ ...discountForm, endDate: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label>Applies to Product IDs (Optional comma-separated)</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. uuid-1, uuid-2"
+                      value={discountForm.appliesToProductIds}
+                      onChange={(e) => setDiscountForm({ ...discountForm, appliesToProductIds: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="form-group checkbox-group">
+                    <input
+                      type="checkbox"
+                      id="global-discount"
+                      checked={discountForm.global}
+                      onChange={(e) => setDiscountForm({ ...discountForm, global: e.target.checked })}
+                    />
+                    <label htmlFor="global-discount">Applies globally to all eligible catalog products</label>
+                  </div>
+
+                  <div className="form-group checkbox-group">
+                    <input
+                      type="checkbox"
+                      id="active-discount"
+                      checked={discountForm.active}
+                      onChange={(e) => setDiscountForm({ ...discountForm, active: e.target.checked })}
+                    />
+                    <label htmlFor="active-discount">Coupon is active and redeemable</label>
+                  </div>
+
+                  <div className="form-actions">
+                    <button type="button" onClick={() => setShowDiscountForm(false)} className="btn-outline">Cancel</button>
+                    <button type="submit" className="btn-primary" style={{ background: '#2E4A3F' }}>Save Coupon</button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {/* Discount Table */}
+            <div className="admin-table-wrapper">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>Code</th>
+                    <th>Type</th>
+                    <th>Value</th>
+                    <th>Global</th>
+                    <th>Duration</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {discounts.map((disc) => (
+                    <tr key={disc.id}>
+                      <td><strong>{disc.code}</strong></td>
+                      <td>{disc.type === 'percentage' ? 'Percentage' : 'Fixed Amount'}</td>
+                      <td>{disc.type === 'percentage' ? `${disc.value}%` : formatPrice(disc.value)}</td>
+                      <td>{disc.global ? 'Yes' : 'No'}</td>
+                      <td style={{ fontSize: '0.8rem' }}>
+                        {new Date(disc.startDate).toLocaleDateString()} - {new Date(disc.endDate).toLocaleDateString()}
+                      </td>
+                      <td>
+                        <span className={`order-status-badge ${disc.active ? 'delivered' : 'cancelled'}`}>
                           {disc.active ? 'Active' : 'Inactive'}
                         </span>
                       </td>
@@ -824,6 +1137,3 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
     </div>
   )
 }
-
-
-
