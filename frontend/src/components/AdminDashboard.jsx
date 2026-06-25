@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { fallbackProductImage, normalizeProductImageName, resolveProductImage } from '../utils/productImages'
+import { storefrontProducts } from '../utils/storefrontProducts'
 
 export default function AdminDashboard({ apiBaseUrl, onLogout }) {
   const [activeTab, setActiveTab] = useState('overview') // 'overview' | 'products' | 'orders' | 'users' | 'discounts' | 'logs'
@@ -32,7 +33,8 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
   const [showDiscountForm, setShowDiscountForm] = useState(false)
 
   // Form Fields
-  const [productForm, setProductForm] = useState({ name: '', description: '', functionTag: 'Nourish', price: '', compareAtPrice: '', stockQuantity: '', images: '', tags: '', isExcludedFromPromos: false })
+  const emptyProductForm = { name: '', description: '', functionTag: 'Nourish', price: '', compareAtPrice: '', stockQuantity: '', images: '', tags: '', isExcludedFromPromos: false }
+  const [productForm, setProductForm] = useState(emptyProductForm)
   const [discountForm, setDiscountForm] = useState({ code: '', type: 'percentage', value: '', appliesToProductIds: '', global: true, startDate: '', endDate: '', active: true })
   const [trackingForm, setTrackingForm] = useState({ trackingNumber: '', logisticsCompany: '' })
 
@@ -83,7 +85,7 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
       } else if (activeTab === 'products') {
         const res = await fetch(`${apiBaseUrl}/api/products?limit=200`)
         const data = await res.json()
-        if (data.status === 'success') setProducts(data.data)
+        if (data.status === 'success') setProducts(mergeStorefrontProducts(data.data))
         else setError(data.message || 'Failed to load products')
       } else if (activeTab === 'orders') {
         const res = await fetch(`${apiBaseUrl}/api/admin/orders?limit=100`, { headers })
@@ -192,10 +194,10 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
 
       const data = await res.json()
       if (data.status === 'success') {
-        setSuccess(editingProduct ? 'Product updated successfully' : 'Product created successfully')
+        setSuccess(editingProduct && !editingProduct.isStorefrontPlaceholder ? 'Product updated successfully' : 'Product saved to admin catalog')
         setShowProductForm(false)
         setEditingProduct(null)
-        setProductForm({ name: '', description: '', functionTag: 'Nourish', price: '', compareAtPrice: '', stockQuantity: '', images: '', tags: '', isExcludedFromPromos: false })
+        setProductForm(emptyProductForm)
         fetchTabData()
       } else {
         setError(data.message || 'Operation failed')
@@ -360,6 +362,68 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
     setSidebarOpen(false)
   }
 
+  const createStorefrontPlaceholder = (product, storefrontOrder) => ({
+    id: `storefront-${product.slug}`,
+    slug: product.slug,
+    name: product.name,
+    description: product.description,
+    functionTag: product.functionTag,
+    price: product.price,
+    compareAtPrice: null,
+    stockQuantity: product.stockQuantity,
+    images: [product.image],
+    tags: product.tags,
+    isExcludedFromPromos: false,
+    storefrontOrder,
+    isStorefrontPlaceholder: true,
+  })
+
+  const mergeStorefrontProducts = (dbProducts) => {
+    const dbBySlug = new Map(dbProducts.map((product) => [product.slug, product]))
+    const merged = storefrontProducts.map((storeProduct, index) => {
+      const dbProduct = dbBySlug.get(storeProduct.slug)
+      if (dbProduct) {
+        dbBySlug.delete(storeProduct.slug)
+        return { ...dbProduct, storefrontOrder: index, isStorefrontPlaceholder: false }
+      }
+      return createStorefrontPlaceholder(storeProduct, index)
+    })
+
+    return [
+      ...merged,
+      ...Array.from(dbBySlug.values()).map((product, index) => ({
+        ...product,
+        storefrontOrder: storefrontProducts.length + index,
+        isStorefrontPlaceholder: false,
+      })),
+    ]
+  }
+
+  const productToForm = (product) => ({
+    name: product.name,
+    description: product.description,
+    functionTag: product.functionTag,
+    price: product.price,
+    compareAtPrice: product.compareAtPrice || '',
+    stockQuantity: product.stockQuantity,
+    images: (product.images || []).map(normalizeProductImageName).join(','),
+    tags: (product.tags || []).join(','),
+    isExcludedFromPromos: product.isExcludedFromPromos,
+  })
+
+  const beginProductEdit = (product) => {
+    setEditingProduct(product)
+    setProductForm(productToForm(product))
+    setShowProductForm(true)
+  }
+
+  const filteredProducts = products.filter((product) => {
+    const query = productSearch.trim().toLowerCase()
+    if (!query) return true
+    return [product.name, product.slug, product.description, product.functionTag, ...(product.tags || [])]
+      .filter(Boolean)
+      .some((value) => String(value).toLowerCase().includes(query))
+  })
   return (
     <div className="admin-dashboard-container">
 
@@ -451,7 +515,69 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
                           const maxRev = Math.max(...salesAnalytics.chartData.map((cd) => cd.revenue), 1)
                           const barHeight = (d.revenue / maxRev) * 150
                           const x = (index / salesAnalytics.chartData.length) * 450 + 25
-                          return (
+                          const createStorefrontPlaceholder = (product, storefrontOrder) => ({
+    id: `storefront-${product.slug}`,
+    slug: product.slug,
+    name: product.name,
+    description: product.description,
+    functionTag: product.functionTag,
+    price: product.price,
+    compareAtPrice: null,
+    stockQuantity: product.stockQuantity,
+    images: [product.image],
+    tags: product.tags,
+    isExcludedFromPromos: false,
+    storefrontOrder,
+    isStorefrontPlaceholder: true,
+  })
+
+  const mergeStorefrontProducts = (dbProducts) => {
+    const dbBySlug = new Map(dbProducts.map((product) => [product.slug, product]))
+    const merged = storefrontProducts.map((storeProduct, index) => {
+      const dbProduct = dbBySlug.get(storeProduct.slug)
+      if (dbProduct) {
+        dbBySlug.delete(storeProduct.slug)
+        return { ...dbProduct, storefrontOrder: index, isStorefrontPlaceholder: false }
+      }
+      return createStorefrontPlaceholder(storeProduct, index)
+    })
+
+    return [
+      ...merged,
+      ...Array.from(dbBySlug.values()).map((product, index) => ({
+        ...product,
+        storefrontOrder: storefrontProducts.length + index,
+        isStorefrontPlaceholder: false,
+      })),
+    ]
+  }
+
+  const productToForm = (product) => ({
+    name: product.name,
+    description: product.description,
+    functionTag: product.functionTag,
+    price: product.price,
+    compareAtPrice: product.compareAtPrice || '',
+    stockQuantity: product.stockQuantity,
+    images: (product.images || []).map(normalizeProductImageName).join(','),
+    tags: (product.tags || []).join(','),
+    isExcludedFromPromos: product.isExcludedFromPromos,
+  })
+
+  const beginProductEdit = (product) => {
+    setEditingProduct(product)
+    setProductForm(productToForm(product))
+    setShowProductForm(true)
+  }
+
+  const filteredProducts = products.filter((product) => {
+    const query = productSearch.trim().toLowerCase()
+    if (!query) return true
+    return [product.name, product.slug, product.description, product.functionTag, ...(product.tags || [])]
+      .filter(Boolean)
+      .some((value) => String(value).toLowerCase().includes(query))
+  })
+  return (
                             <g key={d.date}>
                               <rect x={x} y={170 - barHeight} width="8" height={barHeight} fill="#2E4A3F" rx="2" />
                               <text x={x - 2} y="185" fontSize="6" fill="#888">{d.date.substring(5)}</text>
@@ -528,14 +654,26 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
           <div className="tab-view products-view">
             <div className="view-header">
               <h1>Products Inventory Manager</h1>
-              <button onClick={() => { setEditingProduct(null); setShowProductForm(true) }} className="btn-primary" style={{ background: '#2E4A3F' }}>Add New Product</button>
+              <div className="header-actions">
+                <input
+                  className="table-search"
+                  type="search"
+                  placeholder="Search products, descriptions, tags..."
+                  value={productSearch}
+                  onChange={(e) => setProductSearch(e.target.value)}
+                />
+                <button onClick={() => { setEditingProduct(null); setProductForm(emptyProductForm); setShowProductForm(true) }} className="btn-primary" style={{ background: '#2E4A3F' }}>Add New Product</button>
+              </div>
             </div>
 
             {/* Product Edit / Creation Form Dialog */}
             {showProductForm && (
               <div className="admin-form-modal">
                 <form onSubmit={handleProductSubmit} className="admin-form-card">
-                  <h2>{editingProduct ? 'Update Product Details' : 'Create Product Entry'}</h2>
+                  <h2>{editingProduct?.isStorefrontPlaceholder ? 'Add Store Product to Admin' : editingProduct ? 'Update Product Details' : 'Create Product Entry'}</h2>
+                  {editingProduct?.isStorefrontPlaceholder && (
+                    <p>This product is visible on the store. Saving it adds it to the admin database so future edits update the live store data.</p>
+                  )}
                   
                   <div className="form-group">
                     <label>Product Name</label>
@@ -619,7 +757,7 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {products.map((prod) => (
+                  {filteredProducts.map((prod) => (
                     <tr key={prod.id}>
                       <td>
                         <div className="admin-product-cell">
@@ -632,6 +770,7 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
                           <div>
                             <strong>{prod.name}</strong>
                             <span className="table-sub">{prod.slug}</span>
+                            {prod.isStorefrontPlaceholder && <span className="order-status-badge pending" style={{ marginTop: '6px' }}>Store product - save to sync</span>}
                             <span className="table-desc">{prod.description}</span>
                             <span className="table-sub" style={{ display: 'block', marginTop: '3px', fontSize: '0.7rem' }}>
                               {prod.images && prod.images.length > 0 ? `📷 ${prod.images.map(normalizeProductImageName).join(', ')}` : '❌ No images'}
@@ -644,24 +783,15 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
                       <td className={prod.stockQuantity <= 10 ? 'warning-text' : ''}>{prod.stockQuantity}</td>
                       <td>{prod.isExcludedFromPromos ? 'Yes' : 'No'}</td>
                       <td>
-                        <button onClick={() => {
-                          setEditingProduct(prod)
-                          setProductForm({
-                            name: prod.name,
-                            description: prod.description,
-                            functionTag: prod.functionTag,
-                            price: prod.price,
-                            compareAtPrice: prod.compareAtPrice || '',
-                            stockQuantity: prod.stockQuantity,
-                            images: prod.images.map(normalizeProductImageName).join(','),
-                            tags: prod.tags.join(','),
-                            isExcludedFromPromos: prod.isExcludedFromPromos,
-                          })
-                          setShowProductForm(true)
-                        }} className="btn-table-action text-edit">Edit</button>
-                        <button onClick={() => handleTogglePromo(prod.id)} className="btn-table-action text-toggle">Toggle Promo</button>
-                        <button onClick={() => handleDeleteProduct(prod.id)} className="btn-table-action text-delete">Delete</button>
-                      </td>
+                        <button onClick={() => beginProductEdit(prod)} className="btn-table-action text-edit">
+                          {prod.isStorefrontPlaceholder ? 'Sync / Edit' : 'Edit'}
+                        </button>
+                        {!prod.isStorefrontPlaceholder && (
+                          <>
+                            <button onClick={() => handleTogglePromo(prod.id)} className="btn-table-action text-toggle">Toggle Promo</button>
+                            <button onClick={() => handleDeleteProduct(prod.id)} className="btn-table-action text-delete">Delete</button>
+                          </>
+                        )}                      </td>
                     </tr>
                   ))}
                 </tbody>

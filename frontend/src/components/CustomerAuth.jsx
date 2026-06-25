@@ -72,6 +72,9 @@ export default function CustomerAuth({ apiBaseUrl, onAuthSuccess, onBack, initia
             localStorage.setItem('user', JSON.stringify(data.data.user))
             onAuthSuccess(data.data.user)
           }
+        } else if (data.status === 'pending_verification') {
+          setMessage(data.message || 'Please check your email for the verification code.')
+          setView('verify')
         } else {
           if (data.errors && Array.isArray(data.errors)) {
             setError(data.errors.map((e) => e.message).join(', '))

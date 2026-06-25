@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { handleProductImageError, productImage, resolveProductImage } from '../utils/productImages'
+import { storefrontProducts } from '../utils/storefrontProducts'
 
 const CartIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -9,118 +10,16 @@ const CartIcon = () => (
   </svg>
 )
 
-const products = [
-  {
-    id: 'shop-herbal-shampoo',
-    name: 'HERBAL SHAMPOO',
-    desc: 'A gentle yet effective cleanser formulated with botanical ingredients to remove buildup, excess oil, and impurities while supporting a healthy scalp environment for stronger, healthier hair.',
-    price: 6500,
-    rating: '*****',
-    reviews: 243,
-    badge: null,
-    image: productImage('shampoo-herbal-cleanse.png'),
-  },
-  {
-    id: 'shop-velvet-curls',
-    name: 'VELVET CURLS CONDITIONER',
-    desc: 'A moisturizing conditioner designed to soften, detangle, and improve manageability while helping to reduce breakage and enhance curl definition.',
-    price: 6500,
-    rating: '*****',
-    reviews: 117,
-    badge: null,
-    image: productImage('conditioner-velvet-curls.png'),
-  },
-  {
-    id: 'shop-pure-moisture',
-    name: 'PURE MOISTURE LEAVE-IN CONDITIONER',
-    desc: 'A lightweight leave-in treatment that delivers lasting hydration, improves softness, and helps keep hair manageable, smooth, and protected throughout the day.',
-    price: 6500,
-    rating: '*****',
-    reviews: 164,
-    badge: null,
-    image: productImage('leave-in-conditioner.png'),
-  },
-  {
-    id: 'shop-royal-soft',
-    name: 'ROYAL SOFT HAIR BUTTER',
-    desc: 'A rich blend of nourishing butters and oils that helps seal in moisture, soften strands, and restore dry, dull hair without weighing it down.',
-    price: 6500,
-    rating: '*****',
-    reviews: 128,
-    badge: null,
-    image: productImage('hair-butter.png'),
-  },
-  {
-    id: 'shop-herbal-growth',
-    name: 'HAIR GROWTH CREAM',
-    desc: 'A nutrient-rich hair cream formulated to moisturize, strengthen, and support healthy hair growth while reducing dryness and breakage.',
-    price: 6000,
-    rating: '*****',
-    reviews: 201,
-    badge: null,
-    image: productImage('herbal-growth-cream.png'),
-  },
-  {
-    id: 'shop-deep-conditioner',
-    name: 'DEEP CONDITIONER',
-    desc: 'An intensive treatment designed to deeply nourish, strengthen, and restore moisture to dry, damaged, or brittle hair for improved elasticity and shine.',
-    price: 8500,
-    rating: '*****',
-    reviews: 209,
-    badge: null,
-    image: productImage('deep-conditioner.png'),
-  },
-  {
-    id: 'shop-detangling-spray',
-    name: 'DETANGLING SPRAY',
-    desc: 'A lightweight detangling spray that helps reduce knots, improve slip, and make styling easier while providing hydration and softness.',
-    price: 7000,
-    rating: '*****',
-    reviews: 96,
-    badge: null,
-    image: productImage('tangle-tamer.png'),
-  },
-  {
-    id: 'shop-hydra-root',
-    name: 'HYDRA ROOT THERAPY ANTI-DANDRUFF CREAM',
-    desc: 'A soothing scalp treatment formulated to help relieve dryness, itching, flakes, and scalp discomfort while promoting a healthier scalp environment.',
-    price: 8000,
-    rating: '*****',
-    reviews: 142,
-    badge: null,
-    image: productImage('anti-dandruff-cream.png'),
-  },
-  {
-    id: 'shop-edge-growth',
-    name: 'EDGE GROWTH CREAM',
-    desc: 'A targeted formula designed to nourish fragile edges, reduce breakage, and support the appearance of fuller, healthier-looking hairlines.',
-    price: 5000,
-    rating: '*****',
-    reviews: 186,
-    badge: 'Bestseller',
-    image: productImage('edge-growth-cream.png'),
-  },
-  {
-    id: 'shop-root-revival',
-    name: 'ROOT REVIVAL AYURVEDIC HAIR OIL',
-    desc: 'A carefully crafted blend of Ayurvedic herbs and nourishing oils designed to support scalp health, strengthen roots, and encourage healthier hair growth.',
-    price: 7000,
-    rating: '*****',
-    reviews: 319,
-    badge: 'Customer Pick',
-    image: productImage('root-revival-oil.png'),
-  },
-  {
-    id: 'shop-beard-oil',
-    name: 'BEARD OIL',
-    desc: 'A lightweight grooming oil that softens beard hair, moisturizes the skin beneath, and promotes a healthier, well-maintained beard.',
-    price: 5000,
-    rating: '*****',
-    reviews: 88,
-    badge: null,
-    image: productImage('IMG_3525.PNG'),
-  },
-]
+const products = storefrontProducts.map((product) => ({
+  id: `shop-${product.slug}`,
+  name: product.name,
+  desc: product.description,
+  price: product.price,
+  rating: product.rating,
+  reviews: product.reviews,
+  badge: product.badge,
+  image: productImage(product.image),
+}))
 
 const formatPrice = (price) =>
   new Intl.NumberFormat('en-NG', {
