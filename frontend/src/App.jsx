@@ -47,14 +47,24 @@ function App() {
   // Initialize session state and path-based routing
   useEffect(() => {
     // 1. Restore sessions
-    const storedUser = localStorage.getItem('user')
-    if (storedUser) {
-      setCurrentUser(JSON.parse(storedUser))
+    try {
+      const storedUser = localStorage.getItem('user')
+      if (storedUser && storedUser !== 'undefined') {
+        setCurrentUser(JSON.parse(storedUser))
+      }
+    } catch (e) {
+      console.error('Error parsing stored user:', e)
+      localStorage.removeItem('user')
     }
 
-    const storedAdmin = localStorage.getItem('adminUser')
-    if (storedAdmin) {
-      setAdminUser(JSON.parse(storedAdmin))
+    try {
+      const storedAdmin = localStorage.getItem('adminUser')
+      if (storedAdmin && storedAdmin !== 'undefined') {
+        setAdminUser(JSON.parse(storedAdmin))
+      }
+    } catch (e) {
+      console.error('Error parsing stored admin:', e)
+      localStorage.removeItem('adminUser')
     }
 
     // 2. Simple Routing

@@ -22,12 +22,14 @@ const initialProducts = storefrontProducts.map((product) => ({
   image: productImage(product.image),
 }))
 
-const formatPrice = (price) =>
-  new Intl.NumberFormat('en-NG', {
+const formatPrice = (price) => {
+  const num = Number(price)
+  return new Intl.NumberFormat('en-NG', {
     style: 'currency',
     currency: 'NGN',
     maximumFractionDigits: 0,
-  }).format(price)
+  }).format(isNaN(num) ? 0 : num)
+}
 
 export default function Categories({ addToCart }) {
   const ref = useRef(null)
@@ -40,12 +42,12 @@ export default function Categories({ addToCart }) {
         const res = await fetch(`${apiBaseUrl}/api/products`)
         const data = await res.json()
         if (data.status === 'success') {
-          const dbProducts = data.data
+          const dbProducts = Array.isArray(data.data) ? data.data : []
           const matchedDbIds = new Set()
 
           // Map over storefront products and update them if matched in DB
           const updatedStorefront = initialProducts.map(p => {
-            const match = dbProducts.find(dbP => dbP.slug === p.slug)
+            const match = dbProducts.find(dbP => dbP && dbP.slug === p.slug)
             if (match) {
               matchedDbIds.add(match.id)
               return {
@@ -72,7 +74,7 @@ export default function Categories({ addToCart }) {
               price: product.price,
               rating: '*****',
               reviews: 120 + Math.floor(Math.random() * 180),
-              badge: product.tags.includes('bestseller') ? 'Bestseller' : product.tags.includes('new') ? 'New' : null,
+              badge: (product.tags && Array.isArray(product.tags) && product.tags.includes('bestseller')) ? 'Bestseller' : (product.tags && Array.isArray(product.tags) && product.tags.includes('new')) ? 'New' : null,
               image: resolveProductImage(product.images?.[0]),
               tags: product.tags
             }))

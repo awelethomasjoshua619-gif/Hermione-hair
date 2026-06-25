@@ -43,12 +43,14 @@ const bestProducts = [
 ]
 
 
-const formatPrice = (price) =>
-  new Intl.NumberFormat('en-NG', {
+const formatPrice = (price) => {
+  const num = Number(price)
+  return new Intl.NumberFormat('en-NG', {
     style: 'currency',
     currency: 'NGN',
     maximumFractionDigits: 0,
-  }).format(price)
+  }).format(isNaN(num) ? 0 : num)
+}
 
 export default function Bestsellers({ addToCart }) {
   const ref = useRef(null)
@@ -61,10 +63,15 @@ export default function Bestsellers({ addToCart }) {
         const res = await fetch(`${apiBaseUrl}/api/products`)
         const data = await res.json()
         if (data.status === 'success') {
-          setProducts(prev => prev.map(p => {
+          const dbProducts = Array.isArray(data.data) ? data.data : []
+          const updatedBestsellers = bestProducts.map(p => {
             const cleanCartId = p.id.replace('best-', '').replace('shop-', '')
             const match = dbProducts.find(
-              (dbP) => dbP.slug === cleanCartId || dbP.slug.includes(cleanCartId) || cleanCartId.includes(dbP.slug)
+              (dbP) => dbP && dbP.slug && (
+                dbP.slug === cleanCartId || 
+                dbP.slug.includes(cleanCartId) || 
+                cleanCartId.includes(dbP.slug)
+              )
             )
             if (match) {
               return {
@@ -77,7 +84,8 @@ export default function Bestsellers({ addToCart }) {
               }
             }
             return p
-          }))
+          })
+          setProducts(updatedBestsellers)
         }
       } catch (err) {
         console.error('Failed to fetch products for bestsellers:', err)
