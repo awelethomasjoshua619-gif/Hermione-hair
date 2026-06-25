@@ -10,8 +10,9 @@ const CartIcon = () => (
   </svg>
 )
 
-const products = storefrontProducts.map((product) => ({
+const initialProducts = storefrontProducts.map((product) => ({
   id: `shop-${product.slug}`,
+  slug: product.slug,
   name: product.name,
   desc: product.description,
   price: product.price,
@@ -30,7 +31,7 @@ const formatPrice = (price) =>
 
 export default function Categories({ addToCart }) {
   const ref = useRef(null)
-  const [productList, setProductList] = useState(products)
+  const [productList, setProductList] = useState(initialProducts)
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -40,22 +41,20 @@ export default function Categories({ addToCart }) {
         const data = await res.json()
         if (data.status === 'success') {
           const dbProducts = data.data
-          setProductList(prev => prev.map(p => {
-            const cleanCartId = p.id.replace('best-', '').replace('shop-', '')
-            const match = dbProducts.find(
-              (dbP) => dbP.slug === cleanCartId || dbP.slug.includes(cleanCartId) || cleanCartId.includes(dbP.slug)
-            )
-            if (match) {
-              return {
-                ...p,
-                price: match.price,
-                name: match.name,
-                desc: match.description || p.desc,
-                image: resolveProductImage(match.images?.[0]) || p.image,
-              }
-            }
-            return p
-          }))
+          if (dbProducts.length > 0) {
+            setProductList(dbProducts.map(product => ({
+              id: product.id,
+              slug: product.slug,
+              name: product.name,
+              desc: product.description,
+              price: product.price,
+              rating: '*****',
+              reviews: 120 + Math.floor(Math.random() * 180),
+              badge: product.tags.includes('bestseller') ? 'Bestseller' : product.tags.includes('new') ? 'New' : null,
+              image: resolveProductImage(product.images?.[0]),
+              tags: product.tags
+            })))
+          }
         }
       } catch (err) {
         console.error('Failed to fetch products for categories:', err)
@@ -122,4 +121,3 @@ export default function Categories({ addToCart }) {
     </section>
   )
 }
-

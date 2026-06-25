@@ -62,22 +62,22 @@ export default function Bestsellers({ addToCart }) {
         const data = await res.json()
         if (data.status === 'success') {
           const dbProducts = data.data
-          setProducts(prev => prev.map(p => {
-            const cleanCartId = p.id.replace('best-', '').replace('shop-', '')
-            const match = dbProducts.find(
-              (dbP) => dbP.slug === cleanCartId || dbP.slug.includes(cleanCartId) || cleanCartId.includes(dbP.slug)
-            )
-            if (match) {
-              return {
-                ...p,
-                price: match.price,
-                name: match.name,
-                desc: match.description || p.desc,
-                image: resolveProductImage(match.images?.[0]) || p.image,
-              }
-            }
-            return p
-          }))
+          const bestDb = dbProducts.filter(p => p.tags.includes('bestseller'))
+          const displayProducts = bestDb.length > 0 ? bestDb : dbProducts.slice(0, 3)
+          if (displayProducts.length > 0) {
+            setProducts(displayProducts.map(product => ({
+              id: product.id,
+              slug: product.slug,
+              name: product.name,
+              desc: product.description,
+              price: product.price,
+              rating: '*****',
+              reviews: 180 + Math.floor(Math.random() * 120),
+              badge: 'Bestseller',
+              image: resolveProductImage(product.images?.[0]),
+              tags: product.tags
+            })))
+          }
         }
       } catch (err) {
         console.error('Failed to fetch products for bestsellers:', err)
