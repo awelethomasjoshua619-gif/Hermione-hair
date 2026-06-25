@@ -43,7 +43,7 @@ export const resolveProductImage = (image) => {
   if (/^https?:\/\//i.test(imageValue)) return imageValue
 
   const normalizedImage = normalizeProductImageName(imageValue)
-  if (localProductImages.has(normalizedImage)) return productImage(normalizedImage)
+  if (normalizedImage) return productImage(normalizedImage)
 
   return fallbackProductImage
 }

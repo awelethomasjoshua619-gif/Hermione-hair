@@ -119,6 +119,14 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return
     }
 
+    if (!user.isVerified) {
+      res.status(403).json({
+        status: 'pending_verification',
+        message: 'Your email address is not verified. Please check your email for the verification code.',
+      })
+      return
+    }
+
     // Update lastSeenAt
     await prisma.user.update({
       where: { id: user.id },

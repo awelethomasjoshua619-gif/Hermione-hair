@@ -515,69 +515,7 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
                           const maxRev = Math.max(...salesAnalytics.chartData.map((cd) => cd.revenue), 1)
                           const barHeight = (d.revenue / maxRev) * 150
                           const x = (index / salesAnalytics.chartData.length) * 450 + 25
-                          const createStorefrontPlaceholder = (product, storefrontOrder) => ({
-    id: `storefront-${product.slug}`,
-    slug: product.slug,
-    name: product.name,
-    description: product.description,
-    functionTag: product.functionTag,
-    price: product.price,
-    compareAtPrice: null,
-    stockQuantity: product.stockQuantity,
-    images: [product.image],
-    tags: product.tags,
-    isExcludedFromPromos: false,
-    storefrontOrder,
-    isStorefrontPlaceholder: true,
-  })
-
-  const mergeStorefrontProducts = (dbProducts) => {
-    const dbBySlug = new Map(dbProducts.map((product) => [product.slug, product]))
-    const merged = storefrontProducts.map((storeProduct, index) => {
-      const dbProduct = dbBySlug.get(storeProduct.slug)
-      if (dbProduct) {
-        dbBySlug.delete(storeProduct.slug)
-        return { ...dbProduct, storefrontOrder: index, isStorefrontPlaceholder: false }
-      }
-      return createStorefrontPlaceholder(storeProduct, index)
-    })
-
-    return [
-      ...merged,
-      ...Array.from(dbBySlug.values()).map((product, index) => ({
-        ...product,
-        storefrontOrder: storefrontProducts.length + index,
-        isStorefrontPlaceholder: false,
-      })),
-    ]
-  }
-
-  const productToForm = (product) => ({
-    name: product.name,
-    description: product.description,
-    functionTag: product.functionTag,
-    price: product.price,
-    compareAtPrice: product.compareAtPrice || '',
-    stockQuantity: product.stockQuantity,
-    images: (product.images || []).map(normalizeProductImageName).join(','),
-    tags: (product.tags || []).join(','),
-    isExcludedFromPromos: product.isExcludedFromPromos,
-  })
-
-  const beginProductEdit = (product) => {
-    setEditingProduct(product)
-    setProductForm(productToForm(product))
-    setShowProductForm(true)
-  }
-
-  const filteredProducts = products.filter((product) => {
-    const query = productSearch.trim().toLowerCase()
-    if (!query) return true
-    return [product.name, product.slug, product.description, product.functionTag, ...(product.tags || [])]
-      .filter(Boolean)
-      .some((value) => String(value).toLowerCase().includes(query))
-  })
-  return (
+                          return (
                             <g key={d.date}>
                               <rect x={x} y={170 - barHeight} width="8" height={barHeight} fill="#2E4A3F" rx="2" />
                               <text x={x - 2} y="185" fontSize="6" fill="#888">{d.date.substring(5)}</text>

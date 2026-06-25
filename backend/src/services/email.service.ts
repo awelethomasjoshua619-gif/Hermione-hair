@@ -3,10 +3,8 @@ import { env } from '../config/env'
 
 const resend = new Resend(env.RESEND_API_KEY)
 
-// NOTE: The 'from' address uses Resend's shared domain for now.
-// Once you verify hermionehair.com on resend.com/domains,
-// change this to: 'Hermione Hair <no-reply@hermionehair.com>'
-const FROM_ADDRESS = 'Hermione Hair <onboarding@resend.dev>'
+// NOTE: The 'from' address uses your verified custom domain.
+const FROM_ADDRESS = 'Hermione Hair <no-reply@hermionehair.com>'
 
 interface OrderItemInfo {
   name: string
@@ -62,14 +60,19 @@ export const emailService = {
       </html>
     `
     try {
-      await resend.emails.send({
+      const { data, error } = await resend.emails.send({
         from: FROM_ADDRESS,
         to: email,
         subject: 'Your Hermione Hair Verification Code 🌿',
         html: htmlContent,
       })
+      if (error) {
+        console.error('Failed to send verification email (Resend API Error):', error)
+      } else {
+        console.log(`Verification email sent successfully to ${email}:`, data)
+      }
     } catch (err) {
-      console.error('Failed to send verification email:', err)
+      console.error('Failed to send verification email (Network/Exception):', err)
     }
   },
 
@@ -116,14 +119,19 @@ export const emailService = {
       </html>
     `
     try {
-      await resend.emails.send({
+      const { data, error } = await resend.emails.send({
         from: FROM_ADDRESS,
         to: email,
         subject: 'Reset Your Hermione Hair Password',
         html: htmlContent,
       })
+      if (error) {
+        console.error('Failed to send password reset email (Resend API Error):', error)
+      } else {
+        console.log(`Password reset email sent successfully to ${email}:`, data)
+      }
     } catch (err) {
-      console.error('Failed to send password reset email:', err)
+      console.error('Failed to send password reset email (Network/Exception):', err)
     }
   },
 
@@ -215,15 +223,21 @@ export const emailService = {
       </html>
     `
 
-    resend.emails
-      .send({
+    try {
+      const { data, error } = await resend.emails.send({
         from: FROM_ADDRESS,
         to: email,
         subject: 'Your Hermione Hair Order is Confirmed! 🌿',
         html: htmlContent,
       })
-      .then(() => console.log(`Order confirmation email sent to ${email}`))
-      .catch((err) => console.error('Failed to send order confirmation email:', err))
+      if (error) {
+        console.error('Failed to send order confirmation email (Resend API Error):', error)
+      } else {
+        console.log(`Order confirmation email sent to ${email}:`, data)
+      }
+    } catch (err) {
+      console.error('Failed to send order confirmation email (Network/Exception):', err)
+    }
   },
 
   sendTrackingNotification: async (
@@ -276,14 +290,20 @@ export const emailService = {
       </html>
     `
 
-    resend.emails
-      .send({
+    try {
+      const { data, error } = await resend.emails.send({
         from: FROM_ADDRESS,
         to: email,
         subject: 'Your Hermione Hair Order is On Its Way! 📦',
         html: htmlContent,
       })
-      .then(() => console.log(`Tracking notification email sent to ${email}`))
-      .catch((err) => console.error('Failed to send tracking notification email:', err))
+      if (error) {
+        console.error('Failed to send tracking notification email (Resend API Error):', error)
+      } else {
+        console.log(`Tracking notification email sent to ${email}:`, data)
+      }
+    } catch (err) {
+      console.error('Failed to send tracking notification email (Network/Exception):', err)
+    }
   },
 }
