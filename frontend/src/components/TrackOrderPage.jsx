@@ -151,11 +151,9 @@ export default function TrackOrderPage({ apiBaseUrl, onBack }) {
                   )}
                 </div>
 
-                <h4 style={{ marginTop: '22px' }}>Shipping Address</h4>
+                <h4 style={{ marginTop: '22px' }}>Need Help?</h4>
                 <p className="order-address-text">
-                  {order.shippingAddress.street}<br />
-                  {order.shippingAddress.city}, {order.shippingAddress.state}<br />
-                  Phone: {order.shippingAddress.phone}
+                  If your tracking number is missing or the status looks wrong, contact support with your reference number.
                 </p>
               </div>
             </div>
@@ -165,3 +163,4 @@ export default function TrackOrderPage({ apiBaseUrl, onBack }) {
     </main>
   )
 }
+

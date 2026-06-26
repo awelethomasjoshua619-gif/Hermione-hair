@@ -111,6 +111,12 @@ function App() {
       }
     } else if (path === '/verify-email') {
       setPage('verify-email')
+    } else if (path === '/privacy-policy') {
+      setPage('privacy-policy')
+    } else if (path === '/terms-of-service') {
+      setPage('terms-of-service')
+    } else if (path === '/track-order') {
+      setPage('track-order')
     } else if (path === '/payment-callback') {
       const reference = params.get('reference')
       if (reference) {
@@ -525,6 +531,7 @@ function App() {
 }
 
 export default App
+
 
 
 

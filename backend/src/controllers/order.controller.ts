@@ -278,7 +278,18 @@ export const trackOrderPublic = async (req: Request, res: Response): Promise<voi
       return
     }
 
-    res.json({ status: 'success', data: order })
+    res.json({
+      status: 'success',
+      data: {
+        id: order.id,
+        createdAt: order.createdAt,
+        paystackReference: order.paystackReference,
+        status: order.status,
+        totalAmount: order.totalAmount,
+        trackingNumber: order.trackingNumber,
+        orderItems: order.orderItems,
+      },
+    })
   } catch (error) {
     console.error('trackOrderPublic error:', error)
     res.status(500).json({ status: 'error', message: 'Internal server error' })
@@ -328,5 +339,6 @@ export const adminSetTracking = async (req: AuthenticatedRequest, res: Response)
     res.status(500).json({ status: 'error', message: 'Internal server error' })
   }
 }
+
 
 
