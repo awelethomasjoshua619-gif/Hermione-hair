@@ -50,6 +50,9 @@ export default function Footer({ onNavigate }) {
                       if (onNavigate) {
                         if (l === 'FAQs') onNavigate('faqs')
                         else if (l === 'Contact Us') onNavigate('contact')
+                        else if (l === 'Track My Order') onNavigate('track-order')
+                        else if (l === 'Privacy Policy') onNavigate('privacy-policy')
+                        else if (l === 'Terms of Service') onNavigate('terms-of-service')
                         else onNavigate('home')
                       }
                     }}
@@ -69,4 +72,7 @@ export default function Footer({ onNavigate }) {
     </footer>
   )
 }
+
+
+
 

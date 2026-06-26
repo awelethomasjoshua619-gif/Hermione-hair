@@ -32,6 +32,7 @@ import {
 import {
   checkout,
   getMeOrders,
+  trackOrderPublic,
   adminGetOrders,
   adminUpdateOrderStatus,
   adminSetTracking,
@@ -143,6 +144,7 @@ app.get('/api/products/:slug', getProductBySlug)
 // Checkout & Orders (Requires Authentication)
 app.post('/api/cart/checkout', authenticate, requireRole('customer'), validate(checkoutSchema), checkout)
 app.get('/api/orders/me', authenticate, requireRole('customer'), getMeOrders)
+app.get('/api/orders/track', trackOrderPublic)
 
 // Public Discounts
 app.post('/api/discount/validate', validateDiscountCode)
@@ -286,6 +288,9 @@ resetTestUser()
 app.listen(env.PORT, () => {
   console.log(`🚀 Hermione Hair API running on http://localhost:${env.PORT}`)
 })
+
+
+
 
 
 

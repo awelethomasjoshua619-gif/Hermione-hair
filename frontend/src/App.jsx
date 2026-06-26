@@ -10,6 +10,9 @@ import Footer from './components/Footer'
 import CartPage from './components/CartPage'
 import FaqsPage from './components/FaqsPage'
 import ContactPage from './components/ContactPage'
+import PrivacyPolicyPage from './components/PrivacyPolicyPage'
+import TermsOfServicePage from './components/TermsOfServicePage'
+import TrackOrderPage from './components/TrackOrderPage'
 import CustomerAuth from './components/CustomerAuth'
 import CustomerOrders from './components/CustomerOrders'
 import AdminPortal from './components/AdminPortal'
@@ -177,6 +180,18 @@ function App() {
     setPage('privacy-policy')
     setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 0)
     logSiteVisit('/privacy-policy')
+  }
+
+  const goTermsOfService = () => {
+    setPage('terms-of-service')
+    setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 0)
+    logSiteVisit('/terms-of-service')
+  }
+
+  const goTrackOrder = () => {
+    setPage('track-order')
+    setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 0)
+    logSiteVisit('/track-order')
   }
 
   const goOrders = () => {
@@ -431,7 +446,14 @@ function App() {
         <FaqsPage onBack={goHome} />
       ) : page === 'contact' ? (
         <ContactPage onBack={goHome} />
+      ) : page === 'privacy-policy' ? (
+        <PrivacyPolicyPage onBack={goHome} />
+      ) : page === 'terms-of-service' ? (
+        <TermsOfServicePage onBack={goHome} />
+      ) : page === 'track-order' ? (
+        <TrackOrderPage apiBaseUrl={apiBaseUrl} onBack={goHome} />
       ) : (
+
         <>
           <Hero />
           <Marquee />
@@ -447,6 +469,9 @@ function App() {
           onNavigate={(target) => {
             if (target === 'faqs') goFaqs()
             else if (target === 'contact') goContact()
+            else if (target === 'privacy-policy') goPrivacyPolicy()
+            else if (target === 'terms-of-service') goTermsOfService()
+            else if (target === 'track-order') goTrackOrder()
             else goHome()
           }}
         />
@@ -500,6 +525,11 @@ function App() {
 }
 
 export default App
+
+
+
+
+
 
 
 

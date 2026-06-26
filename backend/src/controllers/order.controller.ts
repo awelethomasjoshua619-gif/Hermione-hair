@@ -1,4 +1,4 @@
-import { Response } from 'express'
+import { Request, Response } from 'express'
 import axios from 'axios'
 import prisma from '../config/db'
 import { env } from '../config/env'
@@ -247,6 +247,43 @@ export const adminUpdateOrderStatus = async (req: AuthenticatedRequest, res: Res
   }
 }
 
+
+export const trackOrderPublic = async (req: Request, res: Response): Promise<void> => {
+  const { reference, email } = req.query as { reference?: string; email?: string }
+
+  try {
+    const cleanedReference = String(reference || '').trim()
+    const cleanedEmail = String(email || '').trim().toLowerCase()
+
+    if (!cleanedReference || !cleanedEmail) {
+      res.status(400).json({ status: 'error', message: 'Order reference and email are required' })
+      return
+    }
+
+    const order = await prisma.order.findFirst({
+      where: {
+        paystackReference: cleanedReference,
+        user: { email: cleanedEmail },
+      },
+      include: {
+        orderItems: {
+          include: { product: { select: { name: true, images: true } } },
+        },
+        user: { select: { name: true, email: true } },
+      },
+    })
+
+    if (!order) {
+      res.status(404).json({ status: 'error', message: 'No order found for the provided reference and email' })
+      return
+    }
+
+    res.json({ status: 'success', data: order })
+  } catch (error) {
+    console.error('trackOrderPublic error:', error)
+    res.status(500).json({ status: 'error', message: 'Internal server error' })
+  }
+}
 export const adminSetTracking = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const { id } = req.params
   const { trackingNumber, logisticsCompany } = req.body
@@ -291,3 +328,5 @@ export const adminSetTracking = async (req: AuthenticatedRequest, res: Response)
     res.status(500).json({ status: 'error', message: 'Internal server error' })
   }
 }
+
+
