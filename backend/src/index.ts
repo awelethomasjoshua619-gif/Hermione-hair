@@ -44,7 +44,7 @@ import {
   getAdminHomeOverview,
   getAuditLogs,
 } from './controllers/analytics.controller'
-import { adminGetUsers, adminDeleteUser } from './controllers/user.controller'
+import { adminGetUsers, adminDeleteUser, adminEmailUser } from './controllers/user.controller'
 import {
   authenticate,
   requireRole,
@@ -62,6 +62,7 @@ import {
   discountSchema,
   updateOrderStatusSchema,
   setTrackingNumberSchema,
+  adminEmailCustomerSchema,
 } from './utils/schemas'
 
 const app = express()
@@ -220,6 +221,7 @@ app.patch('/api/admin/orders/:id/tracking', adminAuthMiddleware, validate(setTra
 
 // Users & Logs
 app.get('/api/admin/users', adminAuthMiddleware, adminGetUsers)
+app.post('/api/admin/users/:id/email', adminAuthMiddleware, validate(adminEmailCustomerSchema), adminEmailUser)
 app.delete('/api/admin/users/:id', adminAuthMiddleware, adminDeleteUser)
 app.get('/api/admin/audit-log', adminAuthMiddleware, getAuditLogs)
 
@@ -284,3 +286,6 @@ resetTestUser()
 app.listen(env.PORT, () => {
   console.log(`🚀 Hermione Hair API running on http://localhost:${env.PORT}`)
 })
+
+
+

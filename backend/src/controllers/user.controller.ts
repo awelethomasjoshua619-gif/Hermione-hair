@@ -1,6 +1,7 @@
 import { Response } from 'express'
 import prisma from '../config/db'
 import { AuthenticatedRequest } from '../middlewares/auth'
+import { emailService } from '../services/email.service'
 
 // Constants
 const ACTIVE_THRESHOLD_DAYS = 30
@@ -83,6 +84,30 @@ export const adminGetUsers = async (req: AuthenticatedRequest, res: Response): P
   }
 }
 
+export const adminEmailUser = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  const { id } = req.params
+  const { subject, message } = req.body
+
+  try {
+    const user = await prisma.user.findUnique({ where: { id } })
+    if (!user) {
+      res.status(404).json({ status: 'error', message: 'Customer not found' })
+      return
+    }
+
+    if (!subject || !message) {
+      res.status(400).json({ status: 'error', message: 'Subject and message are required' })
+      return
+    }
+
+    await emailService.sendCustomEmail(user.email, subject, message, 'Hermione Hair Admin')
+
+    res.json({ status: 'success', message: `Message sent to ${user.email}` })
+  } catch (error) {
+    console.error('adminEmailUser error:', error)
+    res.status(500).json({ status: 'error', message: 'Internal server error' })
+  }
+}
 export const adminDeleteUser = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const { id } = req.params
 
@@ -124,3 +149,5 @@ export const adminDeleteUser = async (req: AuthenticatedRequest, res: Response):
     res.status(500).json({ status: 'error', message: 'Internal server error' })
   }
 }
+
+

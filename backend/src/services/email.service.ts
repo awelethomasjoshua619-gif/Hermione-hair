@@ -13,6 +13,58 @@ interface OrderItemInfo {
 }
 
 export const emailService = {
+  sendCustomEmail: async (email: string, subject: string, message: string, adminName = 'Hermione Hair Team') => {
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+      <body style="margin:0; padding:0; background-color:#f4f4f4; font-family: Arial, sans-serif;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+          <tr>
+            <td align="center" style="padding: 20px;">
+              <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px; width:100%; background:#F8F4EE; border:1px solid #e8e2d9; border-radius:8px; overflow:hidden;">
+                <tr>
+                  <td style="background:#2E4A3F; padding:24px 32px; text-align:center;">
+                    <h1 style="color:#F8F4EE; font-family: Georgia, serif; font-style:italic; margin:0; font-size:24px;">Hermione Hair</h1>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:32px;">
+                    <p style="color:#444; line-height:1.6; margin:0 0 16px;">Hello,</p>
+                    <p style="color:#444; line-height:1.6; white-space:pre-line; margin:0 0 24px;">${message}</p>
+                    <p style="color:#444; line-height:1.6; margin:0;">Best regards,<br />${adminName}</p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="background:#e8e2d9; padding:16px 32px; text-align:center;">
+                    <p style="color:#666; font-size:12px; margin:0;">This email was sent by the Hermione Hair admin team.</p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
+    `
+
+    try {
+      const { data, error } = await resend.emails.send({
+        from: FROM_ADDRESS,
+        to: email,
+        subject,
+        html: htmlContent,
+      })
+      if (error) {
+        console.error('Failed to send custom email (Resend API Error):', error)
+      } else {
+        console.log(`Custom email sent successfully to ${email}:`, data)
+      }
+    } catch (err) {
+      console.error('Failed to send custom email (Network/Exception):', err)
+    }
+  },
+
   sendVerificationEmail: async (email: string, name: string, token: string) => {
     const verificationUrl = `${env.FRONTEND_URL}/verify-email?token=${token}&email=${encodeURIComponent(email)}`
     const htmlContent = `
@@ -307,3 +359,7 @@ export const emailService = {
     }
   },
 }
+
+
+
+

@@ -37,6 +37,7 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
   const [productForm, setProductForm] = useState(emptyProductForm)
   const [discountForm, setDiscountForm] = useState({ code: '', type: 'percentage', value: '', appliesToProductIds: '', global: true, startDate: '', endDate: '', active: true })
   const [trackingForm, setTrackingForm] = useState({ trackingNumber: '', logisticsCompany: '' })
+  const [messageForm, setMessageForm] = useState({ subject: '', message: '' })
 
   // Filters / Pagination
   const [productSearch, setProductSearch] = useState('')
@@ -341,6 +342,33 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
     }
   }
 
+  const handleMessageSubmit = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
+    const headers = getHeaders()
+
+    try {
+      const res = await fetch(`${apiBaseUrl}/api/admin/users/${messagingUser.id}/email`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(messageForm),
+      })
+      const data = await res.json()
+      if (data.status === 'success') {
+        setSuccess(data.message || 'Message sent to customer')
+        setMessagingUser(null)
+        setShowMessageForm(false)
+        setMessageForm({ subject: '', message: '' })
+      } else {
+        setError(data.message || 'Failed to send message')
+      }
+    } catch (err) {
+      setError('Failed to send message')
+    } finally {
+      setLoading(false)
+    }
+  }
   // --- Discounts ---
   const handleDiscountSubmit = async (e) => {
     e.preventDefault()
@@ -784,6 +812,41 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
               <h1>Customer Orders Dispatch</h1>
             </div>
 
+            {/* Message Customer Dialog */}
+            {showMessageForm && messagingUser && (
+              <div className="admin-form-modal">
+                <form onSubmit={handleMessageSubmit} className="admin-form-card">
+                  <h2>Email Customer</h2>
+                  <p>Send a message to <strong>{messagingUser.name}</strong> ({messagingUser.email})</p>
+                  <div className="form-group">
+                    <label>Subject</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Order update"
+                      value={messageForm.subject}
+                      onChange={(e) => setMessageForm({ ...messageForm, subject: e.target.value })}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Message</label>
+                    <textarea
+                      required
+                      rows="6"
+                      placeholder="Write your message to the customer..."
+                      value={messageForm.message}
+                      onChange={(e) => setMessageForm({ ...messageForm, message: e.target.value })}
+                    />
+                  </div>
+                  <div className="form-actions">
+                    <button type="button" onClick={() => { setShowMessageForm(false); setMessagingUser(null) }} className="btn-outline" disabled={loading}>Cancel</button>
+                    <button type="submit" className="btn-primary" style={{ background: '#2E4A3F' }} disabled={loading}>
+                      {loading ? 'Sending...' : 'Send Email'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
             {/* Tracking / Shipping Form Dialog */}
             {trackingOrder && (
               <div className="admin-form-modal">
@@ -938,6 +1001,13 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
                       <td>{usr.totalOrders} orders</td>
                       <td>{formatPrice(usr.lifetimeSpend)}</td>
                       <td>
+                                                <button
+                          onClick={() => { setMessagingUser(usr); setShowMessageForm(true); setMessageForm({ subject: '', message: '' }) }}
+                          className="btn-table-action text-edit"
+                          style={{ color: '#2E4A3F', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 'bold', marginRight: '12px' }}
+                        >
+                          Email
+                        </button>
                         <button
                           onClick={() => handleDeleteUser(usr.id)}
                           className="btn-table-action text-delete"
@@ -1137,3 +1207,7 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
     </div>
   )
 }
+
+
+
+
