@@ -2,6 +2,13 @@ import { useEffect, useRef, useState } from 'react'
 import { handleProductImageError, productImage, resolveProductImage } from '../utils/productImages'
 import { storefrontProducts } from '../utils/storefrontProducts'
 
+const normalizeCatalogKey = (value) =>
+  String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)+/g, '')
+
 const CartIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
@@ -47,7 +54,7 @@ export default function Categories({ addToCart }) {
 
           // Map over storefront products and update them if matched in DB
           const updatedStorefront = initialProducts.map(p => {
-            const match = dbProducts.find(dbP => dbP && dbP.slug === p.slug)
+            const match = dbProducts.find((dbP) => dbP && (dbP.slug === p.slug || normalizeCatalogKey(dbP.name) === normalizeCatalogKey(p.name)))
             if (match) {
               matchedDbIds.add(match.id)
               return {
@@ -146,3 +153,7 @@ export default function Categories({ addToCart }) {
     </section>
   )
 }
+
+
+
+

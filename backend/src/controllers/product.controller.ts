@@ -98,11 +98,22 @@ export const adminCreateProduct = async (req: AuthenticatedRequest, res: Respons
 
 export const adminUpdateProduct = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const { id } = req.params
-  const updates = req.body
+  const body = req.body
 
-  if (updates.name) {
-    updates.slug = updates.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '')
+  // Sanitize: only pick known Product model fields to prevent Prisma unknown-field errors
+  const allowedFields: Record<string, any> = {}
+  if (body.name !== undefined) {
+    allowedFields.name = body.name
+    allowedFields.slug = body.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '')
   }
+  if (body.description !== undefined) allowedFields.description = body.description
+  if (body.functionTag !== undefined) allowedFields.functionTag = body.functionTag
+  if (body.price !== undefined) allowedFields.price = typeof body.price === 'number' ? body.price : parseInt(body.price, 10)
+  if (body.compareAtPrice !== undefined) allowedFields.compareAtPrice = body.compareAtPrice
+  if (body.stockQuantity !== undefined) allowedFields.stockQuantity = typeof body.stockQuantity === 'number' ? body.stockQuantity : parseInt(body.stockQuantity, 10)
+  if (body.images !== undefined) allowedFields.images = Array.isArray(body.images) ? body.images : []
+  if (body.tags !== undefined) allowedFields.tags = Array.isArray(body.tags) ? body.tags : []
+  if (body.isExcludedFromPromos !== undefined) allowedFields.isExcludedFromPromos = body.isExcludedFromPromos
 
   try {
     const product = await prisma.product.findUnique({ where: { id } })
@@ -113,13 +124,14 @@ export const adminUpdateProduct = async (req: AuthenticatedRequest, res: Respons
 
     const updatedProduct = await prisma.product.update({
       where: { id },
-      data: updates,
+      data: allowedFields,
     })
 
-    // Write to audit log
-    await logAdminAction(req.user!.id, 'updated_product', id, { previous: product, updated: updatedProduct })
-
+    // Send success response immediately — don't let audit log failure mask it
     res.json({ status: 'success', data: updatedProduct })
+
+    // Write to audit log (non-blocking, after response is sent)
+    logAdminAction(req.user!.id, 'updated_product', id, { previous: product, updated: updatedProduct }).catch(() => {})
   } catch (error) {
     console.error('adminUpdateProduct error:', error)
     res.status(500).json({ status: 'error', message: 'Internal server error' })

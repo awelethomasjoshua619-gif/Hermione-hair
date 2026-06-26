@@ -26,6 +26,34 @@ const getApiBaseUrl = () => {
 }
 const apiBaseUrl = getApiBaseUrl()
 
+const normalizeCatalogKey = (value) =>
+  String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)+/g, '')
+
+const resolveCatalogProduct = (cartItem, dbProducts) => {
+  const cartId = String(cartItem.id || '')
+  const cartSlug = cartId.replace(/^best-/, '').replace(/^shop-/, '')
+  const cartNameKey = normalizeCatalogKey(cartItem.name)
+
+  return (
+    dbProducts.find((product) => product.id === cartId) ||
+    dbProducts.find((product) => product.slug === cartSlug) ||
+    dbProducts.find((product) => product.slug === cartItem.slug) ||
+    dbProducts.find((product) => normalizeCatalogKey(product.name) === cartNameKey) ||
+    dbProducts.find(
+      (product) =>
+        product.slug === cartSlug ||
+        product.slug.includes(cartSlug) ||
+        cartSlug.includes(product.slug) ||
+        normalizeCatalogKey(product.name).includes(cartNameKey) ||
+        cartNameKey.includes(normalizeCatalogKey(product.name))
+    )
+  )
+}
+
 function App() {
   const [page, setPage] = useState('home')
   const [cartItems, setCartItems] = useState([])
@@ -236,11 +264,7 @@ function App() {
 
       // 2. Map cart items
       const mappedItems = cartItems.map((item) => {
-        // Strip out 'best-' or 'shop-' to find matches
-        const cleanCartId = item.id.replace('best-', '').replace('shop-', '')
-        const match = dbProducts.find(
-          (p) => p.slug === cleanCartId || p.slug.includes(cleanCartId) || cleanCartId.includes(p.slug)
-        )
+        const match = resolveCatalogProduct(item, dbProducts)
 
         if (!match) {
           throw new Error(`Product ${item.name} not found in catalog`)
@@ -470,3 +494,5 @@ function App() {
 }
 
 export default App
+
+
