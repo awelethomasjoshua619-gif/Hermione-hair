@@ -29,8 +29,10 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
   const [editingProduct, setEditingProduct] = useState(null) // null or product object
   const [editingDiscount, setEditingDiscount] = useState(null) // null or discount object
   const [trackingOrder, setTrackingOrder] = useState(null) // null or order object
+  const [messagingUser, setMessagingUser] = useState(null) // null or customer object
   const [showProductForm, setShowProductForm] = useState(false)
   const [showDiscountForm, setShowDiscountForm] = useState(false)
+  const [showMessageForm, setShowMessageForm] = useState(false)
 
   // Form Fields
   const emptyProductForm = { name: '', description: '', functionTag: 'Nourish', price: '', compareAtPrice: '', stockQuantity: '', images: '', tags: '', isExcludedFromPromos: false }
@@ -150,6 +152,48 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
       return [day.date, vDay.visits, vDay.uniqueVisitors, '--', day.revenue, '--']
     })
     exportToCSV('sales_analytics.csv', headers, rows)
+  }
+
+  const syncMissingStorefrontProducts = async () => {
+    setLoading(true)
+    setError('')
+    setSuccess('')
+    const headers = getHeaders()
+
+    try {
+      const existingBySlug = new Set(products.map((product) => product.slug))
+      let createdCount = 0
+
+      for (const product of storefrontProducts) {
+        if (existingBySlug.has(product.slug)) continue
+
+        const res = await fetch(`${apiBaseUrl}/api/admin/products`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            name: product.name,
+            description: product.description,
+            functionTag: product.functionTag,
+            price: product.price,
+            compareAtPrice: null,
+            stockQuantity: product.stockQuantity,
+            images: [product.image],
+            tags: product.tags || [],
+            isExcludedFromPromos: false,
+          }),
+        })
+
+        const data = await res.json()
+        if (data.status === 'success') createdCount += 1
+      }
+
+      setSuccess(createdCount > 0 ? `Synced ${createdCount} storefront product(s) into the admin database.` : 'All storefront products are already synced.')
+      fetchTabData()
+    } catch (err) {
+      setError('Failed to sync storefront products')
+    } finally {
+      setLoading(false)
+    }
   }
 
   // --- CRUD Operations ---
@@ -666,6 +710,7 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
                   value={productSearch}
                   onChange={(e) => setProductSearch(e.target.value)}
                 />
+                <button onClick={syncMissingStorefrontProducts} className="btn-outline" disabled={loading}>Sync Missing Products</button>
                 <button onClick={() => { setEditingProduct(null); setProductForm(emptyProductForm); setShowProductForm(true) }} className="btn-primary" style={{ background: '#2E4A3F' }}>Add New Product</button>
               </div>
             </div>
@@ -676,7 +721,7 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
                 <form onSubmit={handleProductSubmit} className="admin-form-card">
                   <h2>{editingProduct?.isStorefrontPlaceholder ? 'Add Store Product to Admin' : editingProduct ? 'Update Product Details' : 'Create Product Entry'}</h2>
                   {editingProduct?.isStorefrontPlaceholder && (
-                     <p>This product is visible on the store. Saving it adds it to the admin database so future edits update the live store data.</p>
+                     <p>This product will be synced into the catalog so future edits update the live store data.</p>
                   )}
                   
                   <div className="form-group">
@@ -774,7 +819,7 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
                           <div>
                             <strong>{prod.name}</strong>
                             <span className="table-sub">{prod.slug}</span>
-                            {prod.isStorefrontPlaceholder && <span className="order-status-badge pending" style={{ marginTop: '6px' }}>Store product - save to sync</span>}
+                            {prod.isStorefrontPlaceholder && <span className="order-status-badge pending" style={{ marginTop: '6px' }}>Needs sync</span>}
                             <span className="table-desc">{prod.description}</span>
                             <span className="table-sub" style={{ display: 'block', marginTop: '3px', fontSize: '0.7rem' }}>
                               {prod.images && prod.images.length > 0 ? `📷 ${prod.images.map(normalizeProductImageName).join(', ')}` : '❌ No images'}
@@ -788,7 +833,7 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
                       <td>{prod.isExcludedFromPromos ? 'Yes' : 'No'}</td>
                       <td>
                         <button onClick={() => beginProductEdit(prod)} className="btn-table-action text-edit">
-                          {prod.isStorefrontPlaceholder ? 'Sync / Edit' : 'Edit'}
+                          Edit
                         </button>
                         {!prod.isStorefrontPlaceholder && (
                           <>
@@ -1207,6 +1252,11 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
     </div>
   )
 }
+
+
+
+
+
 
 
 

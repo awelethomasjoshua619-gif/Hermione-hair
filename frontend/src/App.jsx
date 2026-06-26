@@ -173,6 +173,12 @@ function App() {
     logSiteVisit('/contact')
   }
 
+  const goPrivacyPolicy = () => {
+    setPage('privacy-policy')
+    setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 0)
+    logSiteVisit('/privacy-policy')
+  }
+
   const goOrders = () => {
     setPage('orders')
     setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 0)
@@ -494,5 +500,6 @@ function App() {
 }
 
 export default App
+
 
 
