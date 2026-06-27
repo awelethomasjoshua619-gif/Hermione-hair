@@ -318,8 +318,8 @@ function App() {
       })
 
       const checkoutData = await response.json()
-
       if (response.status === 200 && checkoutData.status === 'success') {
+        localStorage.setItem('lastOrderReference', checkoutData.data.reference)
         // Redirect to Paystack Checkout URL
         window.location.href = checkoutData.data.authorization_url
       } else {

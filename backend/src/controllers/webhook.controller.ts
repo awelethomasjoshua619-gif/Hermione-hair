@@ -91,16 +91,15 @@ export const paystackWebhook = async (req: Request, res: Response): Promise<void
       emailService.sendOrderConfirmation(
         order.user.email,
         order.id,
+        order.paystackReference,
         order.orderItems.map((item) => ({
           name: item.product.name,
           quantity: item.quantity,
           priceAtPurchase: item.priceAtPurchase,
-        })),
+        })), 
         order.totalAmount,
         order.shippingAddress
       )
-
-      console.log(`Webhook Success: Order ${order.id} marked as PAID and stock decremented.`)
     } catch (err) {
       console.error('Webhook processing transaction failed:', err)
       // Paystack expects 200 OK eventually, but we can throw 500 so they retry if it failed at DB transaction level

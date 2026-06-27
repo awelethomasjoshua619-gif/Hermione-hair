@@ -3,7 +3,7 @@ import { env } from '../config/env'
 
 const resend = new Resend(env.RESEND_API_KEY)
 
-// Domain hermionehair.com is verified on Resend — emails can be sent to any address.
+// Domain hermionehair.com is verified on Resend � emails can be sent to any address.
 const FROM_ADDRESS = 'Hermione Hair <no-reply@hermionehair.com>'
 
 interface OrderItemInfo {
@@ -78,7 +78,7 @@ export const emailService = {
               <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px; width:100%; background:#F8F4EE; border:1px solid #e8e2d9; border-radius:8px; overflow:hidden;">
                 <tr>
                   <td style="background:#2E4A3F; padding:24px 32px; text-align:center;">
-                    <h1 style="color:#F8F4EE; font-family: Georgia, serif; font-style:italic; margin:0; font-size:24px;">Hermione Hair 🌿</h1>
+                    <h1 style="color:#F8F4EE; font-family: Georgia, serif; font-style:italic; margin:0; font-size:24px;">Hermione Hair ??</h1>
                   </td>
                 </tr>
                 <tr>
@@ -101,7 +101,7 @@ export const emailService = {
                 <tr>
                   <td style="background:#e8e2d9; padding:16px 32px; text-align:center;">
                     <p style="color:#666; font-size:12px; margin:0 0 8px;">If you did not create an account with Hermione Hair, please ignore this email.</p>
-                    <p style="color:#666; font-size:12px; margin:0;">© ${new Date().getFullYear()} Hermione Hair. All rights reserved.</p>
+                    <p style="color:#666; font-size:12px; margin:0;">� ${new Date().getFullYear()} Hermione Hair. All rights reserved.</p>
                   </td>
                 </tr>
               </table>
@@ -115,7 +115,7 @@ export const emailService = {
       const { data, error } = await resend.emails.send({
         from: FROM_ADDRESS,
         to: email,
-        subject: 'Your Hermione Hair Verification Code 🌿',
+        subject: 'Your Hermione Hair Verification Code ??',
         html: htmlContent,
       })
       if (error) {
@@ -140,7 +140,7 @@ export const emailService = {
               <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px; width:100%; background:#F8F4EE; border:1px solid #e8e2d9; border-radius:8px; overflow:hidden;">
                 <tr>
                   <td style="background:#2E4A3F; padding:24px 32px; text-align:center;">
-                    <h1 style="color:#F8F4EE; font-family: Georgia, serif; font-style:italic; margin:0; font-size:24px;">Hermione Hair 🌿</h1>
+                    <h1 style="color:#F8F4EE; font-family: Georgia, serif; font-style:italic; margin:0; font-size:24px;">Hermione Hair ??</h1>
                   </td>
                 </tr>
                 <tr>
@@ -160,7 +160,7 @@ export const emailService = {
                 <tr>
                   <td style="background:#e8e2d9; padding:16px 32px; text-align:center;">
                     <p style="color:#666; font-size:12px; margin:0 0 8px;">This is an automated message from Hermione Hair.</p>
-                    <p style="color:#666; font-size:12px; margin:0;">© ${new Date().getFullYear()} Hermione Hair. All rights reserved.</p>
+                    <p style="color:#666; font-size:12px; margin:0;">� ${new Date().getFullYear()} Hermione Hair. All rights reserved.</p>
                   </td>
                 </tr>
               </table>
@@ -190,6 +190,7 @@ export const emailService = {
   sendOrderConfirmation: async (
     email: string,
     orderId: string,
+    orderReference: string,
     items: OrderItemInfo[],
     totalAmount: number,
     address: any
@@ -228,14 +229,15 @@ export const emailService = {
               <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px; width:100%; background:#F8F4EE; border:1px solid #e8e2d9; border-radius:8px; overflow:hidden;">
                 <tr>
                   <td style="background:#2E4A3F; padding:24px 32px; text-align:center;">
-                    <h1 style="color:#F8F4EE; font-family: Georgia, serif; font-style:italic; margin:0; font-size:24px;">Hermione Hair 🌿</h1>
+                    <h1 style="color:#F8F4EE; font-family: Georgia, serif; font-style:italic; margin:0; font-size:24px;">Hermione Hair ??</h1>
                   </td>
                 </tr>
                 <tr>
                   <td style="padding:32px;">
-                    <h2 style="color:#2E4A3F; font-family:Georgia, serif; font-style:italic; margin:0 0 16px;">Order Confirmed! 🎉</h2>
+                    <h2 style="color:#2E4A3F; font-family:Georgia, serif; font-style:italic; margin:0 0 16px;">Order Confirmed! ??</h2>
                     <p style="color:#444; line-height:1.6; margin:0 0 16px;">Thank you for shopping with us! We have received your payment and are preparing your order.</p>
                     <p style="color:#444; margin:0 0 24px;"><strong>Order ID:</strong> <span style="font-family:monospace;">${orderId}</span></p>
+                    <p style="color:#444; margin:0 0 24px;"><strong>Order Reference:</strong> <span style="font-family:monospace;">${orderReference}</span></p>
                     <table style="width:100%; border-collapse:collapse; margin:20px 0;">
                       <thead>
                         <tr style="background:#e8e2d9; color:#2E4A3F;">
@@ -264,7 +266,7 @@ export const emailService = {
                 </tr>
                 <tr>
                   <td style="background:#e8e2d9; padding:16px 32px; text-align:center;">
-                    <p style="color:#666; font-size:12px; margin:0;">© ${new Date().getFullYear()} Hermione Hair. All rights reserved.</p>
+                    <p style="color:#666; font-size:12px; margin:0;">� ${new Date().getFullYear()} Hermione Hair. All rights reserved.</p>
                   </td>
                 </tr>
               </table>
@@ -279,7 +281,7 @@ export const emailService = {
       const { data, error } = await resend.emails.send({
         from: FROM_ADDRESS,
         to: email,
-        subject: 'Your Hermione Hair Order is Confirmed! 🌿',
+        subject: 'Your Hermione Hair Order is Confirmed! ??',
         html: htmlContent,
       })
       if (error) {
@@ -309,12 +311,12 @@ export const emailService = {
               <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px; width:100%; background:#F8F4EE; border:1px solid #e8e2d9; border-radius:8px; overflow:hidden;">
                 <tr>
                   <td style="background:#2E4A3F; padding:24px 32px; text-align:center;">
-                    <h1 style="color:#F8F4EE; font-family: Georgia, serif; font-style:italic; margin:0; font-size:24px;">Hermione Hair 🌿</h1>
+                    <h1 style="color:#F8F4EE; font-family: Georgia, serif; font-style:italic; margin:0; font-size:24px;">Hermione Hair ??</h1>
                   </td>
                 </tr>
                 <tr>
                   <td style="padding:32px;">
-                    <h2 style="color:#2E4A3F; font-family:Georgia, serif; font-style:italic; margin:0 0 16px;">Your Order is On Its Way! 📦</h2>
+                    <h2 style="color:#2E4A3F; font-family:Georgia, serif; font-style:italic; margin:0 0 16px;">Your Order is On Its Way! ??</h2>
                     <p style="color:#444; line-height:1.6; margin:0 0 16px;">Great news! Your package has been dispatched and is currently in transit.</p>
                     <p style="color:#444; margin:0 0 24px;"><strong>Order ID:</strong> <span style="font-family:monospace;">${orderId}</span></p>
                     <div style="background:#e8e2d9; padding:24px; border-radius:8px; text-align:center; margin:24px 0;">
@@ -331,7 +333,7 @@ export const emailService = {
                 <tr>
                   <td style="background:#e8e2d9; padding:16px 32px; text-align:center;">
                     <p style="color:#666; font-size:12px; margin:0 0 8px;">Thank you for choosing Hermione Hair!</p>
-                    <p style="color:#666; font-size:12px; margin:0;">© ${new Date().getFullYear()} Hermione Hair. All rights reserved.</p>
+                    <p style="color:#666; font-size:12px; margin:0;">� ${new Date().getFullYear()} Hermione Hair. All rights reserved.</p>
                   </td>
                 </tr>
               </table>
@@ -346,7 +348,7 @@ export const emailService = {
       const { data, error } = await resend.emails.send({
         from: FROM_ADDRESS,
         to: email,
-        subject: 'Your Hermione Hair Order is On Its Way! 📦',
+        subject: 'Your Hermione Hair Order is On Its Way! ??',
         html: htmlContent,
       })
       if (error) {
