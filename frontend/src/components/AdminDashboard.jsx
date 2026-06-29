@@ -55,6 +55,50 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
     }
   }
 
+  const adminFetch = async (url, options = {}) => {
+    let token = localStorage.getItem('adminAccessToken')
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...options.headers,
+    }
+    let res = await window.fetch(url, { ...options, headers })
+    if (res.status === 401 || res.status === 403) {
+      const refreshToken = localStorage.getItem('adminRefreshToken')
+      if (refreshToken) {
+        try {
+          const refreshRes = await window.fetch(`${apiBaseUrl}/api/auth/refresh`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refreshToken }),
+          })
+          const refreshData = await refreshRes.json()
+          if (refreshData.status === 'success') {
+            const newAccessToken = refreshData.data.accessToken
+            const newRefreshToken = refreshData.data.refreshToken
+            localStorage.setItem('adminAccessToken', newAccessToken)
+            if (newRefreshToken) {
+              localStorage.setItem('adminRefreshToken', newRefreshToken)
+            }
+            const retryHeaders = {
+              'Content-Type': 'application/json',
+              ...options.headers,
+              Authorization: `Bearer ${newAccessToken}`,
+            }
+            res = await window.fetch(url, { ...options, headers: retryHeaders })
+          } else {
+            onLogout()
+          }
+        } catch (e) {
+          onLogout()
+        }
+      } else {
+        onLogout()
+      }
+    }
+    return res
+  }
+
   // Fetch data depending on tab
   useEffect(() => {
     fetchTabData()
@@ -67,46 +111,46 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
 
     try {
       if (activeTab === 'overview') {
-        const res = await fetch(`${apiBaseUrl}/api/admin/analytics/overview`, { headers })
+        const res = await adminFetch(`${apiBaseUrl}/api/admin/analytics/overview`, { headers })
         const data = await res.json()
         if (data.status === 'success') {
           setOverview(data.data)
         }
 
         // Expose visitor & sales analytics in overview too
-        const vRes = await fetch(`${apiBaseUrl}/api/admin/analytics/visitors?period=${analyticsPeriod}`, { headers })
+        const vRes = await adminFetch(`${apiBaseUrl}/api/admin/analytics/visitors?period=${analyticsPeriod}`, { headers })
         const vData = await vRes.json()
         if (vData.status === 'success') setVisitorAnalytics(vData.data)
 
-        const sRes = await fetch(`${apiBaseUrl}/api/admin/analytics/sales?period=${analyticsPeriod}`, { headers })
+        const sRes = await adminFetch(`${apiBaseUrl}/api/admin/analytics/sales?period=${analyticsPeriod}`, { headers })
         const sData = await sRes.json()
         if (sData.status === 'success') setSalesAnalytics(sData.data)
 
-        const tRes = await fetch(`${apiBaseUrl}/api/admin/analytics/top-seller?period=${analyticsPeriod}`, { headers })
+        const tRes = await adminFetch(`${apiBaseUrl}/api/admin/analytics/top-seller?period=${analyticsPeriod}`, { headers })
         const tData = await tRes.json()
         if (tData.status === 'success') setTopSellers(tData.data)
       } else if (activeTab === 'products') {
-        const res = await fetch(`${apiBaseUrl}/api/products?limit=200`)
+        const res = await adminFetch(`${apiBaseUrl}/api/products?limit=200`)
         const data = await res.json()
         if (data.status === 'success') setProducts(mergeStorefrontProducts(data.data))
         else setError(data.message || 'Failed to load products')
       } else if (activeTab === 'orders') {
-        const res = await fetch(`${apiBaseUrl}/api/admin/orders?limit=100`, { headers })
+        const res = await adminFetch(`${apiBaseUrl}/api/admin/orders?limit=100`, { headers })
         const data = await res.json()
         if (data.status === 'success') setOrders(data.data)
         else setError(data.message || 'Failed to load orders')
       } else if (activeTab === 'users') {
-        const res = await fetch(`${apiBaseUrl}/api/admin/users?limit=100`, { headers })
+        const res = await adminFetch(`${apiBaseUrl}/api/admin/users?limit=100`, { headers })
         const data = await res.json()
         if (data.status === 'success') setUsers(data.data)
         else setError(data.message || 'Failed to load customers')
       } else if (activeTab === 'discounts') {
-        const res = await fetch(`${apiBaseUrl}/api/admin/discounts`, { headers })
+        const res = await adminFetch(`${apiBaseUrl}/api/admin/discounts`, { headers })
         const data = await res.json()
         if (data.status === 'success') setDiscounts(data.data)
         else setError(data.message || 'Failed to load discounts')
       } else if (activeTab === 'logs') {
-        const res = await fetch(`${apiBaseUrl}/api/admin/audit-log`, { headers })
+        const res = await adminFetch(`${apiBaseUrl}/api/admin/audit-log`, { headers })
         const data = await res.json()
         if (data.status === 'success') setAuditLogs(data.data)
         else setError(data.message || 'Failed to load logs')
@@ -167,7 +211,7 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
       for (const product of storefrontProducts) {
         if (existingBySlug.has(product.slug)) continue
 
-        const res = await fetch(`${apiBaseUrl}/api/admin/products`, {
+        const res = await adminFetch(`${apiBaseUrl}/api/admin/products`, {
           method: 'POST',
           headers,
           body: JSON.stringify({
@@ -216,13 +260,13 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
       let res
       // Storefront placeholders have a fake id — always create via POST
       if (editingProduct && !editingProduct.isStorefrontPlaceholder) {
-        res = await fetch(`${apiBaseUrl}/api/admin/products/${editingProduct.id}`, {
+        res = await adminFetch(`${apiBaseUrl}/api/admin/products/${editingProduct.id}`, {
           method: 'PATCH',
           headers,
           body: JSON.stringify(body),
         })
       } else {
-        res = await fetch(`${apiBaseUrl}/api/admin/products`, {
+        res = await adminFetch(`${apiBaseUrl}/api/admin/products`, {
           method: 'POST',
           headers,
           body: JSON.stringify(body),
@@ -252,7 +296,7 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
     const headers = getHeaders()
 
     try {
-      const res = await fetch(`${apiBaseUrl}/api/admin/products/${id}`, {
+      const res = await adminFetch(`${apiBaseUrl}/api/admin/products/${id}`, {
         method: 'DELETE',
         headers,
       })
@@ -275,7 +319,7 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
     const headers = getHeaders()
 
     try {
-      const res = await fetch(`${apiBaseUrl}/api/admin/users/${id}`, {
+      const res = await adminFetch(`${apiBaseUrl}/api/admin/users/${id}`, {
         method: 'DELETE',
         headers,
       })
@@ -302,7 +346,7 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
       // Delete all non-admin users one by one using existing endpoint
       let deleted = 0
       for (const user of users) {
-        const res = await fetch(`${apiBaseUrl}/api/admin/users/${user.id}`, { method: 'DELETE', headers })
+        const res = await adminFetch(`${apiBaseUrl}/api/admin/users/${user.id}`, { method: 'DELETE', headers })
         const data = await res.json()
         if (data.status === 'success') deleted++
       }
@@ -319,7 +363,7 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
     setError('')
     const token = localStorage.getItem('adminAccessToken')
     try {
-      const res = await fetch(`${apiBaseUrl}/api/admin/products/${id}/exclude`, {
+      const res = await adminFetch(`${apiBaseUrl}/api/admin/products/${id}/exclude`, {
         method: 'PATCH',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -343,7 +387,7 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
     const headers = getHeaders()
 
     try {
-      const res = await fetch(`${apiBaseUrl}/api/admin/orders/${id}/status`, {
+      const res = await adminFetch(`${apiBaseUrl}/api/admin/orders/${id}/status`, {
         method: 'PATCH',
         headers,
         body: JSON.stringify({ status }),
@@ -365,7 +409,7 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
     const headers = getHeaders()
 
     try {
-      const res = await fetch(`${apiBaseUrl}/api/admin/orders/${trackingOrder.id}/tracking`, {
+      const res = await adminFetch(`${apiBaseUrl}/api/admin/orders/${trackingOrder.id}/tracking`, {
         method: 'PATCH',
         headers,
         body: JSON.stringify(trackingForm),
@@ -393,7 +437,7 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
     const headers = getHeaders()
 
     try {
-      const res = await fetch(`${apiBaseUrl}/api/admin/users/${messagingUser.id}/email`, {
+      const res = await adminFetch(`${apiBaseUrl}/api/admin/users/${messagingUser.id}/email`, {
         method: 'POST',
         headers,
         body: JSON.stringify(messageForm),
@@ -431,13 +475,13 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
     try {
       let res
       if (editingDiscount) {
-        res = await fetch(`${apiBaseUrl}/api/admin/discounts/${editingDiscount.id}`, {
+        res = await adminFetch(`${apiBaseUrl}/api/admin/discounts/${editingDiscount.id}`, {
           method: 'PATCH',
           headers,
           body: JSON.stringify(body),
         })
       } else {
-        res = await fetch(`${apiBaseUrl}/api/admin/discounts`, {
+        res = await adminFetch(`${apiBaseUrl}/api/admin/discounts`, {
           method: 'POST',
           headers,
           body: JSON.stringify(body),
