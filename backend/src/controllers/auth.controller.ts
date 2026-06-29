@@ -104,6 +104,19 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return
     }
 
+    // Distinguish admin login vs customer login routes to prevent user enumeration
+    const isAdminRoute = req.originalUrl.includes('/botanical-portal')
+
+    if (user.role === 'admin' && !isAdminRoute) {
+      res.status(401).json({ status: 'error', message: 'Invalid email or password' })
+      return
+    }
+
+    if (user.role === 'customer' && isAdminRoute) {
+      res.status(401).json({ status: 'error', message: 'Invalid email or password' })
+      return
+    }
+
     const isMatch = await bcrypt.compare(password, user.passwordHash)
     if (!isMatch) {
       if (user.role === 'admin') {

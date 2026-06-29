@@ -64,14 +64,10 @@ export default function CustomerAuth({ apiBaseUrl, onAuthSuccess, onBack, initia
         })
         const data = await res.json()
         if (data.status === 'success') {
-          if (data.data.user.role === 'admin') {
-            setError('Admin accounts must log in via the Admin Portal.')
-          } else {
-            localStorage.setItem('accessToken', data.data.accessToken)
-            localStorage.setItem('refreshToken', data.data.refreshToken)
-            localStorage.setItem('user', JSON.stringify(data.data.user))
-            onAuthSuccess(data.data.user)
-          }
+          localStorage.setItem('accessToken', data.data.accessToken)
+          localStorage.setItem('refreshToken', data.data.refreshToken)
+          localStorage.setItem('user', JSON.stringify(data.data.user))
+          onAuthSuccess(data.data.user)
         } else if (data.status === 'pending_verification') {
           setMessage(data.message || 'Please check your email for the verification code.')
           setView('verify')
