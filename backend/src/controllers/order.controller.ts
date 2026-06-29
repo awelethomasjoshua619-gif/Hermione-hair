@@ -249,13 +249,17 @@ export const adminUpdateOrderStatus = async (req: AuthenticatedRequest, res: Res
 
     // Non-blocking: send customer email notifications on key status changes
     if (status === 'paid' && order.user) {
-      const itemNames = order.orderItems.map((i: any) => `${i.product.name} x${i.quantity}`)
       emailService.sendOrderConfirmation(
         order.user.email,
-        order.user.name,
         order.id,
+        order.paystackReference,
+        order.orderItems.map((i: any) => ({
+          name: i.product.name,
+          quantity: i.quantity,
+          priceAtPurchase: i.priceAtPurchase,
+        })),
         order.totalAmount,
-        itemNames
+        order.shippingAddress
       ).catch(() => {})
     }
   } catch (error) {
