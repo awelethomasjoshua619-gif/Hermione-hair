@@ -28,5 +28,10 @@ export const env = {
   RESEND_API_KEY: process.env.RESEND_API_KEY!,
   TOTP_ENCRYPTION_KEY: process.env.TOTP_ENCRYPTION_KEY!,
   FRONTEND_URL: process.env.FRONTEND_URL!,
+  NODE_ENV: process.env.NODE_ENV || 'development',
   PORT: parseInt(process.env.PORT || '5000', 10),
+  SEED_ADMIN_EMAIL: process.env.SEED_ADMIN_EMAIL || '',
+  SEED_ADMIN_PASSWORD: process.env.SEED_ADMIN_PASSWORD || '',
+  SEED_TEST_EMAIL: process.env.SEED_TEST_EMAIL || '',
+  SEED_TEST_PASSWORD: process.env.SEED_TEST_PASSWORD || '',
 }

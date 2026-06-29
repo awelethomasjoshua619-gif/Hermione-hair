@@ -227,7 +227,10 @@ export const adminUpdateOrderStatus = async (req: AuthenticatedRequest, res: Res
   const { status } = req.body
 
   try {
-    const order = await prisma.order.findUnique({ where: { id } })
+    const order = await prisma.order.findUnique({
+      where: { id },
+      include: { user: true, orderItems: { include: { product: { select: { name: true } } } } },
+    })
     if (!order) {
       res.status(404).json({ status: 'error', message: 'Order not found' })
       return
@@ -238,9 +241,23 @@ export const adminUpdateOrderStatus = async (req: AuthenticatedRequest, res: Res
       data: { status },
     })
 
-    await logAdminAction(req.user!.id, 'changed_order_status', id, { previous: order.status, updated: status })
-
+    // Send response immediately — don't let audit log or email delay the admin
     res.json({ status: 'success', data: updated })
+
+    // Non-blocking: write audit log
+    logAdminAction(req.user!.id, 'changed_order_status', id, { previous: order.status, updated: status }).catch(() => {})
+
+    // Non-blocking: send customer email notifications on key status changes
+    if (status === 'paid' && order.user) {
+      const itemNames = order.orderItems.map((i: any) => `${i.product.name} x${i.quantity}`)
+      emailService.sendOrderConfirmation(
+        order.user.email,
+        order.user.name,
+        order.id,
+        order.totalAmount,
+        itemNames
+      ).catch(() => {})
+    }
   } catch (error) {
     console.error('adminUpdateOrderStatus error:', error)
     res.status(500).json({ status: 'error', message: 'Internal server error' })

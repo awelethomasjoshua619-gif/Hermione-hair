@@ -1,77 +1,49 @@
-import express from 'express'
+ import express from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
 import crypto from 'crypto'
+import jwt from 'jsonwebtoken'
+import bcrypt from 'bcryptjs'
 import prisma from './config/db'
 import { env } from './config/env'
 import {
-  signup,
-  login,
-  verify2FA,
-  verifyEmail,
-  refresh,
-  logout,
-  resendVerification,
-  forgotPassword,
-  resetPassword,
+  signup, login, verify2FA, verifyEmail, refresh,
+  logout, resendVerification, forgotPassword, resetPassword,
 } from './controllers/auth.controller'
 import {
-  getProducts,
-  getProductBySlug,
-  adminCreateProduct,
-  adminUpdateProduct,
-  adminDeleteProduct,
-  adminTogglePromoExclusion,
+  getProducts, getProductBySlug, adminCreateProduct,
+  adminUpdateProduct, adminDeleteProduct, adminTogglePromoExclusion,
 } from './controllers/product.controller'
 import {
-  adminCreateDiscount,
-  adminUpdateDiscount,
-  adminGetDiscounts,
-  validateDiscountCode,
+  adminCreateDiscount, adminUpdateDiscount,
+  adminGetDiscounts, validateDiscountCode,
 } from './controllers/discount.controller'
 import {
-  checkout,
-  getMeOrders,
-  trackOrderPublic,
-  adminGetOrders,
-  adminUpdateOrderStatus,
-  adminSetTracking,
+  checkout, getMeOrders, trackOrderPublic,
+  adminGetOrders, adminUpdateOrderStatus, adminSetTracking,
 } from './controllers/order.controller'
 import { paystackWebhook } from './controllers/webhook.controller'
 import {
-  getVisitors,
-  getSalesAndRevenue,
-  getTopSellers,
-  getAdminHomeOverview,
-  getAuditLogs,
+  getVisitors, getSalesAndRevenue, getTopSellers,
+  getAdminHomeOverview, getAuditLogs,
 } from './controllers/analytics.controller'
 import { adminGetUsers, adminDeleteUser, adminEmailUser } from './controllers/user.controller'
 import {
-  authenticate,
-  requireRole,
-  globalLimiter,
-  authLimiter,
-  adminAuthLimiter,
+  authenticate, requireRole, globalLimiter, authLimiter, adminAuthLimiter,
 } from './middlewares/auth'
 import { validate } from './middlewares/validate'
 import {
-  signupSchema,
-  loginSchema,
-  verify2FASchema,
-  checkoutSchema,
-  productSchema,
-  discountSchema,
-  updateOrderStatusSchema,
-  setTrackingNumberSchema,
-  adminEmailCustomerSchema,
+  signupSchema, loginSchema, verify2FASchema, checkoutSchema,
+  productSchema, discountSchema, updateOrderStatusSchema,
+  setTrackingNumberSchema, adminEmailCustomerSchema,
 } from './utils/schemas'
 
 const app = express()
 
 // 1. Webhook Raw Body Support
-// Paystack webhook signature needs the raw, unmodified request body
 app.use(
   express.json({
+    limit: '10kb',
     verify: (req: any, res, buf) => {
       if (req.originalUrl.startsWith('/api/webhooks/paystack')) {
         req.rawBody = buf.toString()
@@ -79,54 +51,52 @@ app.use(
     },
   })
 )
+app.use(express.urlencoded({ extended: true, limit: '10kb' }))
 
-app.use(express.urlencoded({ extended: true }))
+// 2. CORS — always allow the configured FRONTEND_URL plus localhost for dev
+const allowedOrigins = [
+  env.FRONTEND_URL,                       // e.g. https://hermionehair.com
+  'https://hermionehair.com',             // always allow main domain
+  'https://www.hermionehair.com',         // www variant
+  'http://localhost:5173',                // Vite dev
+  'http://localhost:5174',
+  'http://localhost:3000',
+].filter(Boolean)
 
-// 2. CORS configuration
-// Restricts access to the Netlify domain in production and localhost in development
-const allowedOrigins = [env.FRONTEND_URL, 'http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000']
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (
-        !origin ||
-        allowedOrigins.indexOf(origin) !== -1 ||
-        origin.startsWith('http://192.168.') ||
-        origin.startsWith('http://10.') ||
-        origin.startsWith('http://172.') ||
-        origin.endsWith('.netlify.app') ||
-        origin.endsWith('.trycloudflare.com') ||
-        origin.endsWith('.loca.lt')
-      ) {
+      // Allow server-to-server (no origin) and any allowed origin
+      if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true)
       } else {
-        callback(new Error(`Blocked by CORS policy: Request origin ${origin} not allowed.`))
+        console.warn(`CORS blocked request from origin: ${origin}`)
+        callback(new Error(`Blocked by CORS policy: ${origin}`))
       }
     },
     credentials: true,
   })
 )
 
-// 3. Security Headers via Helmet
+// 3. Security Headers
 app.use(helmet())
 
-// 4. Rate Limiting
+// 4. Global Rate Limiting
 app.use('/api/', globalLimiter)
 
-// Log incoming request paths (debug / diagnostic)
+// 5. Request Logger
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`)
   next()
 })
 
 // ==========================================
-// PUBLIC / CUSTOMER ROUTER
+// PUBLIC / CUSTOMER ROUTES
 // ==========================================
 
-// Paystack Webhook - strictly processed before body-parser changes raw content
 app.post('/api/webhooks/paystack', paystackWebhook)
 
-// Auth Endpoints
+// Auth
 app.post('/api/auth/signup', authLimiter, validate(signupSchema), signup)
 app.post('/api/auth/login', authLimiter, validate(loginSchema), login)
 app.post('/api/auth/verify-2fa', authLimiter, validate(verify2FASchema), verify2FA)
@@ -134,32 +104,35 @@ app.get('/api/auth/verify-email', verifyEmail)
 app.post('/api/auth/resend-verification', authLimiter, resendVerification)
 app.post('/api/auth/forgot-password', authLimiter, forgotPassword)
 app.post('/api/auth/reset-password', authLimiter, resetPassword)
-app.post('/api/auth/refresh', refresh)
+app.post('/api/auth/refresh', authLimiter, refresh)
 app.post('/api/auth/logout', logout)
 
-// Public Products
+// Products
 app.get('/api/products', getProducts)
 app.get('/api/products/:slug', getProductBySlug)
 
-// Checkout & Orders (Requires Authentication)
+// Orders
 app.post('/api/cart/checkout', authenticate, requireRole('customer'), validate(checkoutSchema), checkout)
 app.get('/api/orders/me', authenticate, requireRole('customer'), getMeOrders)
-app.get('/api/orders/track', trackOrderPublic)
+app.get('/api/orders/track', globalLimiter, trackOrderPublic)
 
-// Public Discounts
-app.post('/api/discount/validate', validateDiscountCode)
+// Discounts
+app.post('/api/discount/validate', authLimiter, validateDiscountCode)
 
-// Public Visitor Tracker
-app.post('/api/analytics/visit', async (req, res) => {
-  const { path } = req.body
-  const ip = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || 'anonymous'
+// Visitor Tracker
+app.post('/api/analytics/visit', globalLimiter, async (req, res) => {
+  const rawPath = req.body.path
+  const path = typeof rawPath === 'string' ? rawPath.slice(0, 200) : '/'
 
-  // Hash IP to respect privacy
+  const ip =
+    (req.headers['x-forwarded-for'] as string) ||
+    req.socket.remoteAddress ||
+    'anonymous'
+
   const ipHash = crypto.createHash('sha256').update(ip).digest('hex')
 
-  // Extract optional authenticated user
-  const authHeader = req.headers.authorization
   let userId: string | null = null
+  const authHeader = req.headers.authorization
 
   if (authHeader && authHeader.startsWith('Bearer ')) {
     try {
@@ -173,11 +146,7 @@ app.post('/api/analytics/visit', async (req, res) => {
 
   try {
     const visit = await prisma.siteVisit.create({
-      data: {
-        path: path || '/',
-        ipHash,
-        userId,
-      },
+      data: { path, ipHash, userId },
     })
     res.status(201).json({ status: 'success', data: { id: visit.id } })
   } catch (error) {
@@ -185,24 +154,19 @@ app.post('/api/analytics/visit', async (req, res) => {
   }
 })
 
-// Helper import for visitor decoding
-import jwt from 'jsonwebtoken'
-
 // ==========================================
-// ADMIN ROUTER (STRICT AUTHENTICATION)
+// ADMIN ROUTES — FULLY PROTECTED
 // ==========================================
 
-// Hidden Login Path & aggressive Rate Limiting for Admin
+const adminAuthMiddleware = [authenticate, requireRole('admin')]
+
 app.post('/api/botanical-portal/login', adminAuthLimiter, validate(loginSchema), login)
-
-// Middleware groups for Admin validation
-const adminAuthMiddleware: any[] = [] // Authentication disabled for development
 
 // Analytics
 app.get('/api/admin/analytics/overview', adminAuthMiddleware, getAdminHomeOverview)
 app.get('/api/admin/analytics/visitors', adminAuthMiddleware, getVisitors)
 app.get('/api/admin/analytics/sales', adminAuthMiddleware, getSalesAndRevenue)
-app.get('/api/admin/analytics/revenue', adminAuthMiddleware, getSalesAndRevenue) // Shares sales/revenue query endpoint
+app.get('/api/admin/analytics/revenue', adminAuthMiddleware, getSalesAndRevenue)
 app.get('/api/admin/analytics/top-seller', adminAuthMiddleware, getTopSellers)
 
 // Products
@@ -227,7 +191,10 @@ app.post('/api/admin/users/:id/email', adminAuthMiddleware, validate(adminEmailC
 app.delete('/api/admin/users/:id', adminAuthMiddleware, adminDeleteUser)
 app.get('/api/admin/audit-log', adminAuthMiddleware, getAuditLogs)
 
-// Global generic error handling
+// ==========================================
+// GLOBAL ERROR HANDLER
+// ==========================================
+
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error('Unhandled Server Error:', err)
   res.status(500).json({
@@ -236,61 +203,10 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   })
 })
 
-// Automatically seed/reset the test user on startup
-import bcrypt from 'bcryptjs'
-async function resetTestUser() {
-  try {
-    const email = 'dragon66199@gmail.com'
-    const salt = await bcrypt.genSalt(10)
-    const passwordHash = await bcrypt.hash('Testing12345', salt)
-    
-    await prisma.user.upsert({
-      where: { email },
-      update: {
-        passwordHash,
-        isVerified: true
-      },
-      create: {
-        name: 'Joshua',
-        email,
-        passwordHash,
-        role: 'customer',
-        isVerified: true
-      }
-    })
-    console.log(`[Startup] ✅ Test user ${email} password set to "Testing12345" and verified.`)
+// ==========================================
+// START SERVER
+// ==========================================
 
-    const adminEmail = 'admin@hermionehair.com'
-    const adminPasswordHash = await bcrypt.hash('Admin12345!', salt)
-    await prisma.user.upsert({
-      where: { email: adminEmail },
-      update: {
-        passwordHash: adminPasswordHash,
-        role: 'admin',
-        isVerified: true
-      },
-      create: {
-        name: 'Admin',
-        email: adminEmail,
-        passwordHash: adminPasswordHash,
-        role: 'admin',
-        isVerified: true
-      }
-    })
-    console.log(`[Startup] ✅ Admin user ${adminEmail} password set to "Admin12345!".`)
-  } catch (err) {
-    console.error('Failed to reset test user on startup:', err)
-  }
-}
-resetTestUser()
-
-// Start Server
 app.listen(env.PORT, () => {
   console.log(`🚀 Hermione Hair API running on http://localhost:${env.PORT}`)
 })
-
-
-
-
-
-
