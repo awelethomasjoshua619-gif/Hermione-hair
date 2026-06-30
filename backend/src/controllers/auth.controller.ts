@@ -85,7 +85,7 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
   }
 }
 
-export const login = async (req: Request, res: Response): Promise<void> => {
+export const login = async (req: Request, res: Response): Promise<any> => {
   const { email, password } = req.body
   const normalizedEmail = email.trim().toLowerCase()
   const ip = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || 'unknown'
@@ -159,7 +159,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         
         try {
           await prisma.adminLoginLog.create({
-            data: { adminUserId: user.id, emailAttempted: normalizedEmail, ip, userAgent, success: true, action: '2FA_CHALLENGE_ISSUED' },
+            data: { adminUserId: user.id, emailAttempted: normalizedEmail, ip, userAgent, success: true },
           })
         } catch (logError) {
           console.error('Failed to log admin 2FA challenge:', logError)
@@ -188,7 +188,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
       try {
         await prisma.adminLoginLog.create({
-          data: { adminUserId: user.id, emailAttempted: normalizedEmail, ip, userAgent, success: true, action: '2FA_SETUP_ISSUED' },
+          data: { adminUserId: user.id, emailAttempted: normalizedEmail, ip, userAgent, success: true },
         })
       } catch (logError) {
         console.error('Failed to log admin 2FA setup:', logError)
