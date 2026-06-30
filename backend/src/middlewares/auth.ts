@@ -49,17 +49,15 @@ export const requireRole = (role: 'customer' | 'admin') => {
       return
     }
 
-    // Strict 2FA check for Admin routes (TEMPORARILY DISABLED)
-    /*
+    // Strict 2FA check for Admin routes
     if (role === 'admin' && !req.user.is2FAVerified) {
       res.status(403).json({
         status: 'error',
         message: 'Two-factor authentication pending verification',
-        twoFactorRequired: true,
+        error_code: '2FA_REQUIRED',
       })
       return
     }
-    */
 
     next()
   }

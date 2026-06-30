@@ -85,7 +85,7 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
   }
 }
 
-export const login = async (req: Request, res: Response): Promise<any> => {
+export const login = async (req: Request, res: Response): Promise<Response> => {
   const { email, password } = req.body
   const normalizedEmail = email.trim().toLowerCase()
   const ip = (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || 'unknown'
@@ -105,21 +105,18 @@ export const login = async (req: Request, res: Response): Promise<any> => {
           console.error('Failed to log admin attempt:', logError)
         }
       }
-      res.status(401).json({ status: 'error', message: 'Invalid email or password' })
-      return
+      return res.status(401).json({ status: 'error', message: 'Invalid email or password' })
     }
 
     // Distinguish admin login vs customer login routes to prevent user enumeration
     const isAdminRoute = req.originalUrl.includes('/botanical-portal')
 
     if (user.role === 'admin' && !isAdminRoute) {
-      res.status(401).json({ status: 'error', message: 'Invalid email or password' })
-      return
+      return res.status(401).json({ status: 'error', message: 'Invalid email or password' })
     }
 
     if (user.role === 'customer' && isAdminRoute) {
-      res.status(401).json({ status: 'error', message: 'Invalid email or password' })
-      return
+      return res.status(401).json({ status: 'error', message: 'Invalid email or password' })
     }
 
     const isMatch = await bcrypt.compare(password, user.passwordHash)
@@ -133,16 +130,14 @@ export const login = async (req: Request, res: Response): Promise<any> => {
           console.error('Failed to log admin attempt:', logError)
         }
       }
-      res.status(401).json({ status: 'error', message: 'Invalid email or password' })
-      return
+      return res.status(401).json({ status: 'error', message: 'Invalid email or password' })
     }
 
     if (!user.isVerified) {
-      res.status(403).json({
+      return res.status(403).json({
         status: 'pending_verification',
         message: 'Your email address is not verified. Please check your email for the verification code.',
       })
-      return
     }
 
     // Update lastSeenAt
@@ -207,7 +202,7 @@ export const login = async (req: Request, res: Response): Promise<any> => {
 
     const { accessToken, refreshToken } = generateTokens(user, false) // Customer login is not 2FA verified
 
-    res.json({
+    return res.json({
       status: 'success',
       data: {
         accessToken,
@@ -223,7 +218,7 @@ export const login = async (req: Request, res: Response): Promise<any> => {
     })
   } catch (error) {
     console.error('Login error:', error)
-    res.status(500).json({ status: 'error', message: 'Internal server error. Please try again.' })
+    return res.status(500).json({ status: 'error', message: 'Internal server error. Please try again.' })
   }
 }
 
