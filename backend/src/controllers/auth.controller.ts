@@ -9,7 +9,7 @@ import { encrypt, decrypt } from '../utils/crypto'
 import { emailService } from '../services/email.service'
 import crypto from 'crypto'
 
-const generateTokens = (user: { id: string; email: string; role: string }, is2FAVerified = false) => {
+const generateTokens = (user: { id: string; email: string; role: string }, is2FAVerified: boolean) => {
   const accessToken = jwt.sign(
     { id: user.id, email: user.email, role: user.role, is2FAVerified },
     env.JWT_SECRET,
@@ -25,6 +25,11 @@ const generateTokens = (user: { id: string; email: string; role: string }, is2FA
   return { accessToken, refreshToken }
 }
 
+// Generate a cryptographically secure 6-digit code
+const generateSecureCode = (): string => {
+  return crypto.randomInt(100000, 1000000).toString()
+}
+
 export const signup = async (req: Request, res: Response): Promise<void> => {
   const { name, email, password } = req.body
   const normalizedEmail = email.trim().toLowerCase()
@@ -36,9 +41,9 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
       return
     }
 
-    const salt = await bcrypt.genSalt(10)
+    const salt = await bcrypt.genSalt(12)
     const passwordHash = await bcrypt.hash(password, salt)
-    const verificationToken = Math.floor(100000 + Math.random() * 900000).toString()
+    const verificationToken = generateSecureCode()
 
     const user = await prisma.user.create({
       data: {
@@ -146,20 +151,61 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       data: { lastSeenAt: new Date() },
     })
 
-    // Handle Admin Auth (Strict 2FA Check - TEMPORARILY DISABLED)
+    // Handle Admin Auth (Strict 2FA Check)
     if (user.role === 'admin') {
+      // If 2FA is enabled, require code verification
+      if (user.twoFactorEnabled && user.twoFactorSecret) {
+        const tempToken = jwt.sign({ id: user.id, role: 'admin' }, env.JWT_SECRET, { expiresIn: '5m' })
+        
+        try {
+          await prisma.adminLoginLog.create({
+            data: { adminUserId: user.id, emailAttempted: normalizedEmail, ip, userAgent, success: true, action: '2FA_CHALLENGE_ISSUED' },
+          })
+        } catch (logError) {
+          console.error('Failed to log admin 2FA challenge:', logError)
+        }
+
+        return res.json({
+          status: '2fa_required',
+          message: 'Please enter your 2FA code to complete login.',
+          data: { tempToken },
+        })
+      }
+
+      // If 2FA is NOT enabled, force setup for security
+      const secret = authenticator.generateSecret()
+      const encryptedSecret = encrypt(secret)
+      const appName = 'HermioneHair Admin'
+      const otpauth = authenticator.keyuri(user.email, appName, secret)
+
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { twoFactorSecret: encryptedSecret },
+      })
+
+      const qrCodeDataUrl = await qrcode.toDataURL(otpauth)
+      const tempToken = jwt.sign({ id: user.id, role: 'admin', setup: true }, env.JWT_SECRET, { expiresIn: '10m' })
+
       try {
         await prisma.adminLoginLog.create({
-          data: { adminUserId: user.id, emailAttempted: normalizedEmail, ip, userAgent, success: true },
+          data: { adminUserId: user.id, emailAttempted: normalizedEmail, ip, userAgent, success: true, action: '2FA_SETUP_ISSUED' },
         })
       } catch (logError) {
-        console.error('Failed to log admin attempt:', logError)
+        console.error('Failed to log admin 2FA setup:', logError)
       }
-      // Fall through to success directly
+
+      return res.json({
+        status: '2fa_setup_required',
+        message: 'Two-Factor Authentication is required. Please scan the QR code and verify to continue.',
+        data: {
+          tempToken,
+          qrCode: qrCodeDataUrl,
+          secret, // For manual entry in authenticator app
+        },
+      })
     }
 
-    // Customer login - success directly
-    const { accessToken, refreshToken } = generateTokens(user, false)
+    const { accessToken, refreshToken } = generateTokens(user, false) // Customer login is not 2FA verified
 
     res.json({
       status: 'success',
@@ -317,10 +363,7 @@ export const refresh = async (req: Request, res: Response): Promise<void> => {
       return
     }
 
-    const { accessToken, refreshToken: newRefreshToken } = generateTokens(
-      user,
-      user.role === 'admin' // Admin refresh assumes they've already passed 2FA previously
-    )
+    const { accessToken, refreshToken: newRefreshToken } = generateTokens(user, false)
 
     res.json({
       status: 'success',
@@ -330,7 +373,7 @@ export const refresh = async (req: Request, res: Response): Promise<void> => {
       },
     })
   } catch (error) {
-    res.status(401).json({ status: 'error', message: 'Session expired. Please log in again.' })
+    res.status(401).json({ status: 'error', message: 'Your session has expired. Please log in again.' })
   }
 }
 
@@ -363,7 +406,7 @@ export const resendVerification = async (req: Request, res: Response): Promise<v
       return
     }
 
-    const verificationToken = Math.floor(100000 + Math.random() * 900000).toString()
+    const verificationToken = generateSecureCode()
 
     await prisma.user.update({
       where: { id: user.id },
@@ -401,8 +444,7 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
       return
     }
 
-    // Generate 6-digit reset OTP (reuse verificationToken field)
-    const resetToken = Math.floor(100000 + Math.random() * 900000).toString()
+    const resetToken = generateSecureCode()
 
     await prisma.user.update({
       where: { id: user.id },
@@ -449,7 +491,7 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
       return
     }
 
-    const salt = await bcrypt.genSalt(10)
+    const salt = await bcrypt.genSalt(12)
     const passwordHash = await bcrypt.hash(newPassword, salt)
 
     await prisma.user.update({

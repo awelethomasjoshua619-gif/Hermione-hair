@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client'
 import * as bcrypt from 'bcryptjs'
+import { env } from '../src/config/env'
 
 const prisma = new PrismaClient()
 
@@ -130,36 +131,39 @@ async function main() {
   console.log('Seeded products.')
 
   // 2. Seed Admin User
-  const adminEmail = 'Hermionehairorg@gmail.com'
-  const adminPassword = 'Hermionehairorg78'
-  const salt = await bcrypt.genSalt(10)
-  const passwordHash = await bcrypt.hash(adminPassword, salt)
+  if (!env.SEED_ADMIN_EMAIL || !env.SEED_ADMIN_PASSWORD) {
+    console.warn('[Seed] Skipping admin user: SEED_ADMIN_EMAIL or SEED_ADMIN_PASSWORD not set in .env')
+  } else {
+    const adminEmail = env.SEED_ADMIN_EMAIL
+    const adminPassword = env.SEED_ADMIN_PASSWORD
+    const salt = await bcrypt.genSalt(12)
+    const passwordHash = await bcrypt.hash(adminPassword, salt)
 
-  await prisma.user.upsert({
-    where: { email: adminEmail.toLowerCase() },
-    update: {
-      passwordHash: passwordHash,
-    },
-    create: {
-      name: 'Hermione Admin',
-      email: adminEmail.toLowerCase(),
-      passwordHash: passwordHash,
-      role: 'admin',
-      isVerified: true,
-      twoFactorEnabled: false,
-    },
-  })
+    await prisma.user.upsert({
+      where: { email: adminEmail.toLowerCase() },
+      update: {
+        passwordHash: passwordHash,
+      },
+      create: {
+        name: 'Hermione Admin',
+        email: adminEmail.toLowerCase(),
+        passwordHash: passwordHash,
+        role: 'admin',
+        isVerified: true,
+        twoFactorEnabled: false,
+      },
+    })
 
-  console.log('--------------------------------------------------')
-  console.log('Seeded Admin account successfully!')
-  console.log(`Email: ${adminEmail}`)
-  console.log(`Password: ${adminPassword}`)
-  console.log('Instructions: On first login, the admin dashboard portal')
-  console.log('will present a 2FA Setup screen. Scan the generated QR code')
-  console.log('with your Authenticator App (Google Authenticator, Duo, etc.)')
-  console.log('and enter the verify code to activate 2FA for this account.')
-  console.log('--------------------------------------------------')
-
+    console.log('--------------------------------------------------')
+    console.log('Seeded Admin account successfully!')
+    console.log(`Email: ${adminEmail}`)
+    console.log('Password: [set from .env variable SEED_ADMIN_PASSWORD]')
+    console.log('Instructions: On first login, the admin dashboard portal')
+    console.log('will present a 2FA Setup screen. Scan the generated QR code')
+    console.log('with your Authenticator App (Google Authenticator, Duo, etc.)')
+    console.log('and enter the verify code to activate 2FA for this account.')
+    console.log('--------------------------------------------------')
+  }
 }
 
 main()
