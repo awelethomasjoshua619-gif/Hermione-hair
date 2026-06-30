@@ -1,6 +1,9 @@
-import { Response } from 'express'
+import { Request, Response } from 'express'
 import prisma from '../config/db'
 import { AuthenticatedRequest } from '../middlewares/auth'
+import crypto from 'crypto'
+import jwt from 'jsonwebtoken'
+import { env } from '../config/env'
 
 const getStartDate = (period: string): Date => {
   const days = period === 'month' ? 30 : 7
@@ -61,6 +64,41 @@ export const getVisitors = async (req: AuthenticatedRequest, res: Response): Pro
   } catch (error) {
     console.error('getVisitors analytics error:', error)
     res.status(500).json({ status: 'error', message: 'Internal server error' })
+  }
+}
+
+export const logVisit = async (req: Request, res: Response): Promise<void> => {
+  const rawPath = req.body.path
+  const path = typeof rawPath === 'string' ? rawPath.slice(0, 200) : '/'
+
+  const ip =
+    (req.headers['x-forwarded-for'] as string) ||
+    req.socket.remoteAddress ||
+    'anonymous'
+
+  const ipHash = crypto.createHash('sha256').update(ip).digest('hex')
+
+  let userId: string | null = null
+  const authHeader = req.headers.authorization
+
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    try {
+      const token = authHeader.split(' ')[1]
+      const decoded = jwt.verify(token, env.JWT_SECRET, { algorithms: ['HS256'] }) as any
+      userId = decoded.id
+    } catch (e) {
+      // Ignore invalid token for guest visits
+    }
+  }
+
+  try {
+    const visit = await prisma.siteVisit.create({
+      data: { path, ipHash, userId },
+    })
+    res.status(201).json({ status: 'success', data: { id: visit.id } })
+  } catch (error) {
+    console.error('Failed to log visit:', error)
+    res.status(500).json({ status: 'error', message: 'Failed to log visit' })
   }
 }
 
