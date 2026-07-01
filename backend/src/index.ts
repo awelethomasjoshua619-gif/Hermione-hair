@@ -11,6 +11,9 @@ import { ApiError } from './utils/errors'
 
 const app = express()
 
+// Trust Render/Cloudflare proxy so rate limiters correctly read client IPs
+app.set('trust proxy', 1)
+
 // 1. Webhook Raw Body Support
 app.use(
   express.json({
