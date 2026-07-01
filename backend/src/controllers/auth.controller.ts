@@ -361,7 +361,8 @@ export const refresh = async (req: Request, res: Response): Promise<void> => {
       return
     }
 
-    const { accessToken, refreshToken: newRefreshToken } = generateTokens(user, false)
+    const is2FAVerified = user.role === 'admin'
+    const { accessToken, refreshToken: newRefreshToken } = generateTokens(user, is2FAVerified)
 
     res.json({
       status: 'success',

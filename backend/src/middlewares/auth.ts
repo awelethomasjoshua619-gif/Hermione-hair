@@ -108,5 +108,5 @@ export const adminAuthLimiter = rateLimit({
 
 // Aliases for route imports
 export const auth = authenticate
-export const adminOnly = requireRole('admin')
+export const adminOnly = [authenticate, requireRole('admin')]
 
