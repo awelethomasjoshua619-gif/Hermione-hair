@@ -44,6 +44,7 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
   // Filters / Pagination
   const [productSearch, setProductSearch] = useState('')
   const [orderSearch, setOrderSearch] = useState('')
+  const [expandedOrderId, setExpandedOrderId] = useState(null)
   const [userSearch, setUserSearch] = useState('')
   const [userStatusFilter, setUserStatusFilter] = useState('all')
 
@@ -985,59 +986,106 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {orders.map((order) => (
-                    <tr key={order.id}>
-                      <td className="monospace" style={{ fontSize: '0.8rem' }}>{order.id.slice(0, 8)}...</td>
-                      <td>
-                        <div>
-                          <strong>{order.user?.name || 'Guest'}</strong>
-                          <span className="table-sub" style={{ display: 'block' }}>{order.user?.email}</span>
-                          <span className="table-sub" style={{ display: 'block', fontSize: '0.7rem' }}>
-                            📞 {order.shippingAddress?.phone || 'No phone'}
-                          </span>
-                        </div>
-                      </td>
-                      <td>{new Date(order.createdAt).toLocaleDateString()}</td>
-                      <td>{formatPrice(order.totalAmount)}</td>
-                      <td>
-                        <span className={`order-status-badge ${order.status}`}>
-                          {order.status.toUpperCase()}
-                        </span>
-                      </td>
-                      <td>
-                        {order.trackingNumber ? (
-                          <div>
-                            <strong>{order.logisticsCompany}</strong>
-                            <span className="table-sub" style={{ display: 'block' }}>#{order.trackingNumber}</span>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => {
-                              setTrackingOrder(order)
-                              setTrackingForm({ trackingNumber: '', logisticsCompany: '' })
-                            }}
-                            className="btn-outline"
-                            style={{ padding: '4px 8px', fontSize: '0.75rem' }}
+                  {orders.map((order) => {
+                    const isExpanded = expandedOrderId === order.id
+                    return (
+                      <>
+                        <tr key={order.id}>
+                          <td
+                            className="monospace"
+                            style={{ fontSize: '0.8rem', cursor: 'pointer', userSelect: 'none' }}
+                            onClick={() => setExpandedOrderId(isExpanded ? null : order.id)}
+                            title="Click to view items ordered"
                           >
-                            Set Tracking
-                          </button>
+                            {isExpanded ? '▼' : '▶'} {order.id.slice(0, 8)}...
+                          </td>
+                          <td>
+                            <div>
+                              <strong>{order.user?.name || 'Guest'}</strong>
+                              <span className="table-sub" style={{ display: 'block' }}>{order.user?.email}</span>
+                              <span className="table-sub" style={{ display: 'block', fontSize: '0.7rem' }}>
+                                📞 {order.shippingAddress?.phone || 'No phone'}
+                              </span>
+                            </div>
+                          </td>
+                          <td>{new Date(order.createdAt).toLocaleDateString()}</td>
+                          <td>{formatPrice(order.totalAmount)}</td>
+                          <td>
+                            <span className={`order-status-badge ${order.status}`}>
+                              {order.status.toUpperCase()}
+                            </span>
+                          </td>
+                          <td>
+                            {order.trackingNumber ? (
+                              <div>
+                                <strong>{order.logisticsCompany}</strong>
+                                <span className="table-sub" style={{ display: 'block' }}>#{order.trackingNumber}</span>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => {
+                                  setTrackingOrder(order)
+                                  setTrackingForm({ trackingNumber: '', logisticsCompany: '' })
+                                }}
+                                className="btn-outline"
+                                style={{ padding: '4px 8px', fontSize: '0.75rem' }}
+                              >
+                                Set Tracking
+                              </button>
+                            )}
+                          </td>
+                          <td>
+                            <select
+                              value={order.status}
+                              onChange={(e) => handleOrderStatusUpdate(order.id, e.target.value)}
+                              style={{ padding: '4px', fontSize: '0.8rem' }}
+                            >
+                              <option value="pending">Pending</option>
+                              <option value="paid">Paid</option>
+                              <option value="shipped">Shipped</option>
+                              <option value="delivered">Delivered</option>
+                              <option value="cancelled">Cancelled</option>
+                            </select>
+                          </td>
+                        </tr>
+                        {isExpanded && (
+                          <tr>
+                            <td colSpan={7} style={{ background: '#faf9f6', padding: '14px 20px' }}>
+                              <strong style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem' }}>
+                                Items Ordered
+                              </strong>
+                              {order.orderItems && order.orderItems.length > 0 ? (
+                                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                                  <thead>
+                                    <tr style={{ textAlign: 'left', color: '#888' }}>
+                                      <th style={{ paddingRight: '16px', paddingBottom: '6px', fontWeight: 600 }}>Product</th>
+                                      <th style={{ paddingRight: '16px', paddingBottom: '6px', fontWeight: 600 }}>Qty</th>
+                                      <th style={{ paddingBottom: '6px', fontWeight: 600 }}>Price Each</th>
+                                      <th style={{ paddingBottom: '6px', fontWeight: 600 }}>Subtotal</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {order.orderItems.map((item, i) => (
+                                      <tr key={i}>
+                                        <td style={{ paddingRight: '16px', paddingTop: '4px' }}>
+                                          {item.product?.name || 'Unknown product'}
+                                        </td>
+                                        <td style={{ paddingRight: '16px', paddingTop: '4px' }}>{item.quantity}</td>
+                                        <td style={{ paddingRight: '16px', paddingTop: '4px' }}>{formatPrice(item.priceAtPurchase)}</td>
+                                        <td style={{ paddingTop: '4px' }}>{formatPrice(item.priceAtPurchase * item.quantity)}</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              ) : (
+                                <span className="table-sub">No item details available for this order</span>
+                              )}
+                            </td>
+                          </tr>
                         )}
-                      </td>
-                      <td>
-                        <select
-                          value={order.status}
-                          onChange={(e) => handleOrderStatusUpdate(order.id, e.target.value)}
-                          style={{ padding: '4px', fontSize: '0.8rem' }}
-                        >
-                          <option value="pending">Pending</option>
-                          <option value="paid">Paid</option>
-                          <option value="shipped">Shipped</option>
-                          <option value="delivered">Delivered</option>
-                          <option value="cancelled">Cancelled</option>
-                        </select>
-                      </td>
-                    </tr>
-                  ))}
+                      </>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
@@ -1296,12 +1344,3 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
     </div>
   )
 }
-
-
-
-
-
-
-
-
-
