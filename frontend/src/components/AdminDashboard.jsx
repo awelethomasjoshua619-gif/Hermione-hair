@@ -47,6 +47,7 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
   const [expandedOrderId, setExpandedOrderId] = useState(null)
   const [userSearch, setUserSearch] = useState('')
   const [userStatusFilter, setUserStatusFilter] = useState('all')
+  const [hoveredChartPoint, setHoveredChartPoint] = useState(null)
 
   const getHeaders = () => {
     const token = localStorage.getItem('adminAccessToken')
@@ -513,6 +514,19 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
       maximumFractionDigits: 0,
     }).format(price)
 
+  // Compact currency formatting for tight spaces like chart axis labels (₦12.5K, ₦1.2M)
+  const formatCompactPrice = (price) => {
+    if (price >= 1000000) return `₦${(price / 1000000).toFixed(1)}M`
+    if (price >= 1000) return `₦${(price / 1000).toFixed(1)}K`
+    return `₦${Math.round(price)}`
+  }
+
+  const formatChartDateLabel = (dateStr) => {
+    const d = new Date(dateStr)
+    if (isNaN(d.getTime())) return dateStr
+    return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })
+  }
+
   const navTo = (tab) => {
     setActiveTab(tab)
     setSidebarOpen(false)
@@ -661,26 +675,169 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
             <div className="dashboard-grid">
               {/* Analytics Charts */}
               <div className="dashboard-card chart-container">
-                <h3>Sales Revenue Trend</h3>
-                <div className="svg-chart-wrapper">
-                  <svg viewBox="0 0 500 200" className="svg-chart">
-                    {salesAnalytics.chartData.length > 0 && (
-                      <>
-                        {salesAnalytics.chartData.map((d, index) => {
-                          const maxRev = Math.max(...salesAnalytics.chartData.map((cd) => cd.revenue), 1)
-                          const barHeight = (d.revenue / maxRev) * 150
-                          const x = (index / salesAnalytics.chartData.length) * 450 + 25
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: '8px' }}>
+                  <h3 style={{ margin: 0 }}>Sales Revenue Trend</h3>
+                  <span style={{ fontSize: '0.8rem', color: '#888' }}>
+                    Total: <strong style={{ color: '#2E4A3F' }}>{formatPrice(salesAnalytics.chartData.reduce((sum, d) => sum + d.revenue, 0))}</strong>
+                    {' '}({analyticsPeriod === 'week' ? 'past 7 days' : 'past 30 days'})
+                  </span>
+                </div>
+
+                <div className="svg-chart-wrapper" style={{ marginTop: '12px' }}>
+                  {salesAnalytics.chartData.length === 0 ? (
+                    <p className="no-data-msg">No sales data available for this period yet.</p>
+                  ) : (() => {
+                    const data = salesAnalytics.chartData
+                    const W = 640
+                    const H = 280
+                    const marginLeft = 56
+                    const marginRight = 16
+                    const marginTop = 16
+                    const marginBottom = 44
+                    const chartW = W - marginLeft - marginRight
+                    const chartH = H - marginTop - marginBottom
+                    const maxRev = Math.max(...data.map((d) => d.revenue), 1)
+                    const stepX = data.length > 1 ? chartW / (data.length - 1) : 0
+
+                    const xAt = (i) => marginLeft + i * stepX
+                    const yAt = (rev) => marginTop + chartH - (rev / maxRev) * chartH
+
+                    const points = data.map((d, i) => `${xAt(i)},${yAt(d.revenue)}`).join(' ')
+                    const areaPath = `M ${xAt(0)},${marginTop + chartH} L ${points.split(' ').join(' L ')} L ${xAt(data.length - 1)},${marginTop + chartH} Z`
+
+                    // Show at most ~7 x-axis labels to avoid crowding, regardless of period length
+                    const labelEvery = Math.max(1, Math.ceil(data.length / 7))
+                    const gridLines = [0, 0.25, 0.5, 0.75, 1]
+
+                    return (
+                      <svg viewBox={`0 0 ${W} ${H}`} className="svg-chart" style={{ width: '100%', height: 'auto', overflow: 'visible' }}>
+                        {/* Horizontal gridlines + y-axis revenue labels */}
+                        {gridLines.map((frac) => {
+                          const y = marginTop + chartH - frac * chartH
                           return (
-                            <g key={d.date}>
-                              <rect x={x} y={170 - barHeight} width="8" height={barHeight} fill="#2E4A3F" rx="2" />
-                              <text x={x - 2} y="185" fontSize="6" fill="#888">{d.date.substring(5)}</text>
+                            <g key={frac}>
+                              <line x1={marginLeft} y1={y} x2={W - marginRight} y2={y} stroke="#e7e2d8" strokeWidth="1" />
+                              <text x={marginLeft - 8} y={y + 3} fontSize="9" fill="#999" textAnchor="end">
+                                {formatCompactPrice(maxRev * frac)}
+                              </text>
                             </g>
                           )
                         })}
-                      </>
-                    )}
-                  </svg>
+
+                        {/* Area fill under the line */}
+                        <path d={areaPath} fill="#2E4A3F" fillOpacity="0.08" stroke="none" />
+
+                        {/* Revenue line */}
+                        <polyline points={points} fill="none" stroke="#2E4A3F" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+
+                        {/* X-axis labels (sparse to avoid overlap) */}
+                        {data.map((d, i) => {
+                          if (i % labelEvery !== 0 && i !== data.length - 1) return null
+                          return (
+                            <text
+                              key={`label-${d.date}`}
+                              x={xAt(i)}
+                              y={H - marginBottom + 18}
+                              fontSize="9"
+                              fill="#888"
+                              textAnchor="middle"
+                            >
+                              {formatChartDateLabel(d.date)}
+                            </text>
+                          )
+                        })}
+
+                        {/* Data points with hover tooltips */}
+                        {data.map((d, i) => (
+                          <g key={d.date}>
+                            <circle
+                              cx={xAt(i)}
+                              cy={yAt(d.revenue)}
+                              r={hoveredChartPoint === i ? 5 : 3}
+                              fill="#fff"
+                              stroke="#2E4A3F"
+                              strokeWidth="2"
+                              style={{ cursor: 'pointer', transition: 'r 0.1s ease' }}
+                              onMouseEnter={() => setHoveredChartPoint(i)}
+                              onMouseLeave={() => setHoveredChartPoint(null)}
+                            />
+                            {/* Wider invisible hit area for easier hovering */}
+                            <rect
+                              x={xAt(i) - stepX / 2}
+                              y={marginTop}
+                              width={stepX || 20}
+                              height={chartH}
+                              fill="transparent"
+                              onMouseEnter={() => setHoveredChartPoint(i)}
+                              onMouseLeave={() => setHoveredChartPoint(null)}
+                            />
+                          </g>
+                        ))}
+
+                        {/* Tooltip for hovered point */}
+                        {hoveredChartPoint !== null && data[hoveredChartPoint] && (() => {
+                          const d = data[hoveredChartPoint]
+                          const tx = xAt(hoveredChartPoint)
+                          const ty = yAt(d.revenue)
+                          const boxW = 90
+                          const boxX = Math.min(Math.max(tx - boxW / 2, marginLeft), W - marginRight - boxW)
+                          const boxY = Math.max(ty - 46, 2)
+                          return (
+                            <g>
+                              <line x1={tx} y1={marginTop} x2={tx} y2={marginTop + chartH} stroke="#2E4A3F" strokeWidth="1" strokeDasharray="3,3" opacity="0.4" />
+                              <rect x={boxX} y={boxY} width={boxW} height="34" rx="6" fill="#2E2620" />
+                              <text x={boxX + boxW / 2} y={boxY + 14} fontSize="9" fill="#cfc9bd" textAnchor="middle">
+                                {formatChartDateLabel(d.date)}
+                              </text>
+                              <text x={boxX + boxW / 2} y={boxY + 27} fontSize="10.5" fontWeight="bold" fill="#fff" textAnchor="middle">
+                                {formatPrice(d.revenue)}
+                              </text>
+                            </g>
+                          )
+                        })()}
+                      </svg>
+                    )
+                  })()}
                 </div>
+              </div>
+
+              {/* Revenue Breakdown Table */}
+              <div className="dashboard-card">
+                <h3>Revenue Breakdown ({analyticsPeriod === 'week' ? 'By Day, Past Week' : 'By Day, Past Month'})</h3>
+                {salesAnalytics.chartData.length === 0 ? (
+                  <p className="no-data-msg">No revenue recorded for this period yet.</p>
+                ) : (
+                  <div style={{ maxHeight: '260px', overflowY: 'auto', marginTop: '8px' }}>
+                    <table className="admin-table" style={{ fontSize: '0.85rem' }}>
+                      <thead>
+                        <tr>
+                          <th>Date</th>
+                          <th>Revenue</th>
+                          <th style={{ width: '40%' }}></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {[...salesAnalytics.chartData]
+                          .sort((a, b) => new Date(b.date) - new Date(a.date))
+                          .map((d) => {
+                            const maxRev = Math.max(...salesAnalytics.chartData.map((cd) => cd.revenue), 1)
+                            const pct = maxRev > 0 ? (d.revenue / maxRev) * 100 : 0
+                            return (
+                              <tr key={d.date}>
+                                <td>{formatChartDateLabel(d.date)}</td>
+                                <td style={{ fontWeight: 600 }}>{formatPrice(d.revenue)}</td>
+                                <td>
+                                  <div style={{ background: '#eee8dc', borderRadius: '4px', height: '8px', overflow: 'hidden' }}>
+                                    <div style={{ width: `${pct}%`, height: '100%', background: '#2E4A3F', borderRadius: '4px' }} />
+                                  </div>
+                                </td>
+                              </tr>
+                            )
+                          })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
 
               {/* Low Stock Alerts */}
