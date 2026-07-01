@@ -673,27 +673,27 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
             </div>
 
             <div className="dashboard-grid">
-              {/* Analytics Charts */}
-              <div className="dashboard-card chart-container">
+              {/* Analytics Charts — full width so it's not squeezed into a half column */}
+              <div className="dashboard-card chart-container" style={{ gridColumn: '1 / -1' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: '8px' }}>
                   <h3 style={{ margin: 0 }}>Sales Revenue Trend</h3>
-                  <span style={{ fontSize: '0.8rem', color: '#888' }}>
+                  <span style={{ fontSize: '0.85rem', color: '#888' }}>
                     Total: <strong style={{ color: '#2E4A3F' }}>{formatPrice(salesAnalytics.chartData.reduce((sum, d) => sum + d.revenue, 0))}</strong>
                     {' '}({analyticsPeriod === 'week' ? 'past 7 days' : 'past 30 days'})
                   </span>
                 </div>
 
-                <div className="svg-chart-wrapper" style={{ marginTop: '12px' }}>
+                <div className="svg-chart-wrapper" style={{ marginTop: '16px' }}>
                   {salesAnalytics.chartData.length === 0 ? (
                     <p className="no-data-msg">No sales data available for this period yet.</p>
                   ) : (() => {
                     const data = salesAnalytics.chartData
-                    const W = 640
-                    const H = 280
-                    const marginLeft = 56
-                    const marginRight = 16
-                    const marginTop = 16
-                    const marginBottom = 44
+                    const W = 1100
+                    const H = 360
+                    const marginLeft = 70
+                    const marginRight = 24
+                    const marginTop = 20
+                    const marginBottom = 50
                     const chartW = W - marginLeft - marginRight
                     const chartH = H - marginTop - marginBottom
                     const maxRev = Math.max(...data.map((d) => d.revenue), 1)
@@ -702,33 +702,54 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
                     const xAt = (i) => marginLeft + i * stepX
                     const yAt = (rev) => marginTop + chartH - (rev / maxRev) * chartH
 
-                    const points = data.map((d, i) => `${xAt(i)},${yAt(d.revenue)}`).join(' ')
-                    const areaPath = `M ${xAt(0)},${marginTop + chartH} L ${points.split(' ').join(' L ')} L ${xAt(data.length - 1)},${marginTop + chartH} Z`
+                    // Build a smooth curve using cubic bezier segments between points,
+                    // instead of straight polyline joins, for a more polished look.
+                    const coords = data.map((d, i) => [xAt(i), yAt(d.revenue)])
+                    let smoothPath = ''
+                    if (coords.length === 1) {
+                      smoothPath = `M ${coords[0][0]},${coords[0][1]}`
+                    } else {
+                      smoothPath = `M ${coords[0][0]},${coords[0][1]} `
+                      for (let i = 0; i < coords.length - 1; i++) {
+                        const [x0, y0] = coords[i]
+                        const [x1, y1] = coords[i + 1]
+                        const midX = (x0 + x1) / 2
+                        smoothPath += `C ${midX},${y0} ${midX},${y1} ${x1},${y1} `
+                      }
+                    }
+                    const areaPath = `${smoothPath} L ${xAt(data.length - 1)},${marginTop + chartH} L ${xAt(0)},${marginTop + chartH} Z`
 
-                    // Show at most ~7 x-axis labels to avoid crowding, regardless of period length
-                    const labelEvery = Math.max(1, Math.ceil(data.length / 7))
+                    // Show at most ~8 x-axis labels to avoid crowding, regardless of period length
+                    const labelEvery = Math.max(1, Math.ceil(data.length / 8))
                     const gridLines = [0, 0.25, 0.5, 0.75, 1]
 
                     return (
-                      <svg viewBox={`0 0 ${W} ${H}`} className="svg-chart" style={{ width: '100%', height: 'auto', overflow: 'visible' }}>
+                      <svg viewBox={`0 0 ${W} ${H}`} className="svg-chart" style={{ width: '100%', height: 'auto', maxHeight: '380px', overflow: 'visible' }}>
+                        <defs>
+                          <linearGradient id="revenueAreaGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#2E4A3F" stopOpacity="0.22" />
+                            <stop offset="100%" stopColor="#2E4A3F" stopOpacity="0" />
+                          </linearGradient>
+                        </defs>
+
                         {/* Horizontal gridlines + y-axis revenue labels */}
                         {gridLines.map((frac) => {
                           const y = marginTop + chartH - frac * chartH
                           return (
                             <g key={frac}>
                               <line x1={marginLeft} y1={y} x2={W - marginRight} y2={y} stroke="#e7e2d8" strokeWidth="1" />
-                              <text x={marginLeft - 8} y={y + 3} fontSize="9" fill="#999" textAnchor="end">
+                              <text x={marginLeft - 12} y={y + 4} fontSize="11" fill="#999" textAnchor="end">
                                 {formatCompactPrice(maxRev * frac)}
                               </text>
                             </g>
                           )
                         })}
 
-                        {/* Area fill under the line */}
-                        <path d={areaPath} fill="#2E4A3F" fillOpacity="0.08" stroke="none" />
+                        {/* Area fill under the curve */}
+                        <path d={areaPath} fill="url(#revenueAreaGradient)" stroke="none" />
 
-                        {/* Revenue line */}
-                        <polyline points={points} fill="none" stroke="#2E4A3F" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+                        {/* Smooth revenue curve */}
+                        <path d={smoothPath} fill="none" stroke="#2E4A3F" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
 
                         {/* X-axis labels (sparse to avoid overlap) */}
                         {data.map((d, i) => {
@@ -737,8 +758,8 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
                             <text
                               key={`label-${d.date}`}
                               x={xAt(i)}
-                              y={H - marginBottom + 18}
-                              fontSize="9"
+                              y={H - marginBottom + 24}
+                              fontSize="11"
                               fill="#888"
                               textAnchor="middle"
                             >
@@ -753,10 +774,10 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
                             <circle
                               cx={xAt(i)}
                               cy={yAt(d.revenue)}
-                              r={hoveredChartPoint === i ? 5 : 3}
+                              r={hoveredChartPoint === i ? 6 : 4}
                               fill="#fff"
                               stroke="#2E4A3F"
-                              strokeWidth="2"
+                              strokeWidth="2.5"
                               style={{ cursor: 'pointer', transition: 'r 0.1s ease' }}
                               onMouseEnter={() => setHoveredChartPoint(i)}
                               onMouseLeave={() => setHoveredChartPoint(null)}
@@ -779,17 +800,17 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
                           const d = data[hoveredChartPoint]
                           const tx = xAt(hoveredChartPoint)
                           const ty = yAt(d.revenue)
-                          const boxW = 90
+                          const boxW = 120
                           const boxX = Math.min(Math.max(tx - boxW / 2, marginLeft), W - marginRight - boxW)
-                          const boxY = Math.max(ty - 46, 2)
+                          const boxY = Math.max(ty - 58, 4)
                           return (
                             <g>
-                              <line x1={tx} y1={marginTop} x2={tx} y2={marginTop + chartH} stroke="#2E4A3F" strokeWidth="1" strokeDasharray="3,3" opacity="0.4" />
-                              <rect x={boxX} y={boxY} width={boxW} height="34" rx="6" fill="#2E2620" />
-                              <text x={boxX + boxW / 2} y={boxY + 14} fontSize="9" fill="#cfc9bd" textAnchor="middle">
+                              <line x1={tx} y1={marginTop} x2={tx} y2={marginTop + chartH} stroke="#2E4A3F" strokeWidth="1" strokeDasharray="4,4" opacity="0.35" />
+                              <rect x={boxX} y={boxY} width={boxW} height="44" rx="8" fill="#2E2620" />
+                              <text x={boxX + boxW / 2} y={boxY + 17} fontSize="11" fill="#cfc9bd" textAnchor="middle">
                                 {formatChartDateLabel(d.date)}
                               </text>
-                              <text x={boxX + boxW / 2} y={boxY + 27} fontSize="10.5" fontWeight="bold" fill="#fff" textAnchor="middle">
+                              <text x={boxX + boxW / 2} y={boxY + 34} fontSize="13.5" fontWeight="bold" fill="#fff" textAnchor="middle">
                                 {formatPrice(d.revenue)}
                               </text>
                             </g>
@@ -802,12 +823,12 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
               </div>
 
               {/* Revenue Breakdown Table */}
-              <div className="dashboard-card">
+              <div className="dashboard-card" style={{ gridColumn: '1 / -1' }}>
                 <h3>Revenue Breakdown ({analyticsPeriod === 'week' ? 'By Day, Past Week' : 'By Day, Past Month'})</h3>
                 {salesAnalytics.chartData.length === 0 ? (
                   <p className="no-data-msg">No revenue recorded for this period yet.</p>
                 ) : (
-                  <div style={{ maxHeight: '260px', overflowY: 'auto', marginTop: '8px' }}>
+                  <div style={{ maxHeight: '320px', overflowY: 'auto', marginTop: '8px' }}>
                     <table className="admin-table" style={{ fontSize: '0.85rem' }}>
                       <thead>
                         <tr>
