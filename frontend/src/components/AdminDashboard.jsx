@@ -901,21 +901,64 @@ export default function AdminDashboard({ apiBaseUrl, onLogout }) {
                 </div>
               </div>
 
-              {/* Recent Activity Feed */}
+              {/* Recent Activity Feed — capped preview with a link to the full activity page */}
               <div className="dashboard-card activity-feed">
-                <h3>⚡ Recent Activity Feed</h3>
-                <ul className="activity-list">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                  <h3 style={{ margin: 0 }}>⚡ Recent Activity Feed</h3>
+                  <button
+                    onClick={() => navTo('activity')}
+                    className="btn-outline"
+                    style={{ padding: '6px 12px', fontSize: '0.78rem', whiteSpace: 'nowrap' }}
+                  >
+                    View All Activity →
+                  </button>
+                </div>
+                {overview.activities.length === 0 ? (
+                  <p className="no-data-msg">No recent activity yet.</p>
+                ) : (
+                  <ul className="activity-list" style={{ maxHeight: '260px', overflowY: 'auto', marginTop: '8px' }}>
+                    {overview.activities.slice(0, 6).map((act, i) => (
+                      <li key={i} className="activity-item">
+                        <div className="act-details">
+                          <strong>{act.title}</strong>
+                          <p>{act.desc}</p>
+                        </div>
+                        <span className="act-time">{new Date(act.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Tab: Full Activity Feed Page */}
+        {activeTab === 'activity' && (
+          <div className="tab-view activity-view">
+            <div className="view-header">
+              <h1>⚡ Full Activity Log</h1>
+              <button onClick={() => navTo('overview')} className="btn-outline">← Back to Overview</button>
+            </div>
+
+            <div className="dashboard-card" style={{ padding: '20px' }}>
+              {overview.activities.length === 0 ? (
+                <p className="no-data-msg">No activity recorded yet.</p>
+              ) : (
+                <ul className="activity-list" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
                   {overview.activities.map((act, i) => (
                     <li key={i} className="activity-item">
                       <div className="act-details">
                         <strong>{act.title}</strong>
                         <p>{act.desc}</p>
                       </div>
-                      <span className="act-time">{new Date(act.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                      <span className="act-time">
+                        {new Date(act.timestamp).toLocaleDateString()} · {new Date(act.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
                     </li>
                   ))}
                 </ul>
-              </div>
+              )}
             </div>
           </div>
         )}
