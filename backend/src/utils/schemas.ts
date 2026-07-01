@@ -55,6 +55,9 @@ export const productSchema = z.object({
 })
 
 export const discountSchema = z.object({
+  params: z.object({
+    id: z.string().uuid('Invalid discount ID'),
+  }).optional(), // optional because discountSchema is also used on POST (create), which has no :id
   body: z.object({
     code: z.string().min(3, 'Discount code must be at least 3 characters').optional().nullable(),
     type: z.enum(['percentage', 'fixed']),
@@ -68,18 +71,23 @@ export const discountSchema = z.object({
 })
 
 export const updateOrderStatusSchema = z.object({
+  params: z.object({
+    id: z.string().uuid('Invalid order ID'),
+  }),
   body: z.object({
     status: z.enum(['pending', 'paid', 'shipped', 'delivered', 'cancelled']),
   }),
 })
 
 export const setTrackingNumberSchema = z.object({
+  params: z.object({
+    id: z.string().uuid('Invalid order ID'),
+  }),
   body: z.object({
     trackingNumber: z.string().min(2, 'Tracking number must be at least 2 characters'),
     logisticsCompany: z.string().min(2, 'Logistics company name is required'),
   }),
 })
-
 
 export const adminEmailCustomerSchema = z.object({
   body: z.object({
