@@ -1,4 +1,5 @@
- import express from 'express'
+import express from 'express'
+
 import cors from 'cors'
 import helmet from 'helmet'
 import morgan from 'morgan'
@@ -38,19 +39,22 @@ const allowedOrigins = [
 ].filter(Boolean)
 
 const corsOptions = {
+  // IMPORTANT: do not throw/reject with an Error for disallowed origins.
+  // Some proxies/error paths can then omit CORS headers entirely,
+  // which surfaces as "CORS header missing" in the browser.
   origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-    // Allow server-to-server (no origin) and any allowed origin
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true)
-    } else {
-      console.warn(`CORS blocked request from origin: ${origin}`)
-      callback(new Error(`Blocked by CORS policy: ${origin}`))
-    }
+    // Allow server-to-server (no origin) and any allowed origin.
+    if (!origin || allowedOrigins.includes(origin)) return callback(null, true)
+
+    console.warn(`CORS blocked request from origin: ${origin}`)
+    return callback(null, false)
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Temp-Token'],
+  optionsSuccessStatus: 204,
 }
+
 
 app.use(cors(corsOptions))
 // Explicitly handle preflight requests for all routes

@@ -88,7 +88,10 @@ export const globalLimiter = rateLimit({
   message: { status: 'error', message: 'Too many requests, please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
+  // Never rate-limit CORS preflight requests.
+  skip: (req) => req.method === 'OPTIONS',
 })
+
 
 // Authentication rate limiter (Customers)
 export const authLimiter = rateLimit({
