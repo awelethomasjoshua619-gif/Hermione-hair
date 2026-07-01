@@ -1,11 +1,12 @@
  import express from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
+import morgan from 'morgan'
 import { ZodError } from 'zod'
 import { Prisma } from '@prisma/client'
 import { env } from './config/env'
 import { globalLimiter } from './middlewares/auth'
-import apiRouter from './routes'
+import apiRouter from './routes/index'
 import { ApiError } from './utils/errors'
 
 const app = express()
@@ -61,10 +62,7 @@ app.use(helmet({
 app.use('/api/', globalLimiter)
 
 // 5. Request Logger
-app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`)
-  next()
-})
+app.use(morgan('dev'))
 
 // 6. Health Check
 app.get('/api/health', (req, res) => {
