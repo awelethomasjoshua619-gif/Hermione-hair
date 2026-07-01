@@ -224,7 +224,14 @@ export const adminGetOrders = async (req: AuthenticatedRequest, res: Response): 
 }
 
 export const adminUpdateOrderStatus = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-  const { id } = req.params
+  // validate() mutates req.params from schema.parseAsync.
+  // In some runtime paths req.params ends up undefined, so guard explicitly.
+  const id = (req.params as any)?.id
+  if (!id) {
+    res.status(400).json({ status: 'error', message: 'Order id param is required' })
+    return
+  }
+
   const { status } = req.body
 
   try {
@@ -236,6 +243,7 @@ export const adminUpdateOrderStatus = async (req: AuthenticatedRequest, res: Res
       res.status(404).json({ status: 'error', message: 'Order not found' })
       return
     }
+
 
     const updated = await prisma.order.update({
       where: { id },
