@@ -1,5 +1,6 @@
 import { Request, Response } from 'express'
 import axios from 'axios'
+import crypto from 'crypto'
 import prisma from '../config/db'
 import { env } from '../config/env'
 import { AuthenticatedRequest, logAdminAction } from '../middlewares/auth'
@@ -96,7 +97,7 @@ export const checkout = async (req: AuthenticatedRequest, res: Response): Promis
     }
 
     // Paystack reference
-    const paystackReference = `order-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+    const paystackReference = `order-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`
 
     // 4. Create Order (Pending state) in a transaction
     const order = await prisma.$transaction(async (tx) => {
@@ -360,6 +361,3 @@ export const adminSetTracking = async (req: AuthenticatedRequest, res: Response)
     res.status(500).json({ status: 'error', message: 'Internal server error' })
   }
 }
-
-
-

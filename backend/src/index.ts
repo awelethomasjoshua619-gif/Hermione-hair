@@ -6,7 +6,7 @@ import { ZodError } from 'zod'
 import { Prisma } from '@prisma/client'
 import { env } from './config/env'
 import { globalLimiter } from './middlewares/auth'
-import apiRouter from './routes/index'
+import apiRouter from './routes/index.js'
 import { ApiError } from './utils/errors'
 
 const app = express()
