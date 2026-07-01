@@ -69,6 +69,7 @@ router.post('/auth/resend-verification', authLimiter, resendVerification)
 router.post('/auth/forgot-password', authLimiter, forgotPassword)
 router.post('/auth/reset-password', authLimiter, resetPassword)
 router.post('/auth/2fa/verify', authLimiter, validate(verify2FASchema), verify2FA)
+router.post('/auth/verify-2fa', authLimiter, validate(verify2FASchema), verify2FA) // fallback/legacy
 
 // Discount routes
 router.post('/discounts/validate', validateDiscountCode)
@@ -80,6 +81,7 @@ router.patch('/discounts/:id', adminOnly, validate(discountSchema), adminUpdateD
 // Order routes
 router.get('/orders/track', trackOrderPublic)
 router.post('/orders/checkout', auth, validate(checkoutSchema), checkout)
+router.post('/cart/checkout', auth, validate(checkoutSchema), checkout) // fallback/legacy
 router.get('/orders/me', auth, getMeOrders)
 router.get('/orders', adminOnly, adminGetOrders)
 router.patch('/orders/:id/status', adminOnly, validate(updateOrderStatusSchema), adminUpdateOrderStatus)
@@ -101,6 +103,7 @@ router.post('/webhooks/paystack', paystackWebhook)
 
 // Analytics routes
 router.post('/analytics/log-visit', logVisit)
+router.post('/analytics/visit', logVisit) // fallback/legacy
 router.get('/analytics/visitors', adminOnly, getVisitors)
 router.get('/analytics/sales', adminOnly, getSalesAndRevenue)
 router.get('/analytics/top-sellers', adminOnly, getTopSellers)
