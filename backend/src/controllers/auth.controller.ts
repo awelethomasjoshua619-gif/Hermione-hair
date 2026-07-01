@@ -234,7 +234,7 @@ export const verify2FA = async (req: Request, res: Response): Promise<void> => {
   }
 
   try {
-    const decoded = jwt.verify(tempTokenHeader, env.JWT_SECRET) as any
+    const decoded = jwt.verify(tempTokenHeader, env.JWT_SECRET, { algorithms: ['HS256'] }) as any
     const user = await prisma.user.findUnique({ where: { id: decoded.id } })
 
     if (!user || user.role !== 'admin' || !user.twoFactorSecret) {
@@ -350,7 +350,7 @@ export const refresh = async (req: Request, res: Response): Promise<void> => {
   }
 
   try {
-    const decoded = jwt.verify(refreshToken, env.JWT_REFRESH_SECRET) as any
+    const decoded = jwt.verify(refreshToken, env.JWT_REFRESH_SECRET, { algorithms: ['HS256'] }) as any
     const user = await prisma.user.findUnique({ where: { id: decoded.id } })
 
     if (!user) {

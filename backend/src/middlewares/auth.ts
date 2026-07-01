@@ -24,7 +24,7 @@ export const authenticate = (req: AuthenticatedRequest, res: Response, next: Nex
   const token = authHeader.split(' ')[1]
 
   try {
-    const decoded = jwt.verify(token, env.JWT_SECRET) as any
+    const decoded = jwt.verify(token, env.JWT_SECRET, { algorithms: ['HS256'] }) as any
     req.user = {
       id: decoded.id,
       email: decoded.email,
@@ -105,3 +105,8 @@ export const adminAuthLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 })
+
+// Aliases for route imports
+export const auth = authenticate
+export const adminOnly = requireRole('admin')
+
