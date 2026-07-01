@@ -26,7 +26,7 @@ export default function AdminPortal({ apiBaseUrl, onAuthSuccess, onBack }) {
       const data = await res.json()
 
       if (res.status === 200) {
-        if (data.status === '2fa_setup') {
+        if (data.status === '2fa_setup' || data.status === '2fa_setup_required') {
           setQrCode(data.data.qrCode)
           setSecret(data.data.secret)
           setTempToken(data.data.tempToken)
